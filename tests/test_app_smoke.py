@@ -52,3 +52,18 @@ def test_saved_check_is_restored_on_the_screens():
     assert not at.exception
     assert at.title[0].value == "Чек-лист: Кейс А. Малая столярная мастерская"
     assert any(f"Отвечено {len(session.responses)} из {len(checklist.items)}" in str(p.proto) for p in at.get("progress"))
+
+
+def test_result_screen_shows_plan_and_overdue():
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label.startswith("Демо")).click().run()
+    assert not at.exception
+    assert any(h.value == "План устранения нарушений" for h in at.subheader)
+    # a plan with a past deadline, as if loaded from a file
+    violation = next(i for i, r in at.session_state.responses.items() if r["answer"] == "violation")
+    at.session_state.plan_snapshot = {violation: {"action": "x", "owner": "y", "due": "2020-01-01",
+                                                  "status": "in_work"}}
+    at.session_state.plan_rev = 99
+    at.run()
+    assert not at.exception
+    assert any("Просрочено мероприятий: 1" in w.value for w in at.warning)

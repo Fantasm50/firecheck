@@ -14,6 +14,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
+from core.action_plan import due_text
 from core.scoring import NA, OK, VIOLATION
 from core.validity import validity_alerts
 
@@ -105,8 +106,8 @@ def _setup(doc):
     section.top_margin = section.bottom_margin = Cm(2)
 
 
-def build_report(bases, answers, checklist, result, responses, on_date=None):
-    """Return the DOCX report as bytes."""
+def build_report(bases, answers, checklist, result, responses, on_date=None, plan=None):
+    """Return the DOCX report as bytes. plan: corrective actions by item id (4.13), may be empty."""
     on_date = on_date or date.today()
     doc = Document()
     _setup(doc)
@@ -200,8 +201,12 @@ def build_report(bases, answers, checklist, result, responses, on_date=None):
             text = requirement_text(v.item) + (f"\nКомментарий: {comment}" if comment else "")
             if v.o_raise:
                 text += f"\nВероятность O повышена с {v.o_base} до {v.o}: {v.o_reason}"
+            entry = (plan or {}).get(v.id, {})
+            if entry.get("action"):
+                text += f"\nМероприятие: {entry['action']}"
             o = f"{v.o}*" if v.o_raise else str(v.o)
-            rows.append([n, norm_ref(v.item), text, v.s, o, GROUP_LABELS[v.group], "", ""])
+            rows.append([n, norm_ref(v.item), text, v.s, o, GROUP_LABELS[v.group], due_text(entry),
+                         entry.get("owner", "")])
         table = _table(doc, ["№", "Норма", "Требование", "S", "O", "Приоритет", "Срок устранения", "Ответственный"],
                        rows, [0.7, 2.2, 4.9, 0.7, 0.8, 2.3, 2.3, 3.1])
         for row, v in zip(table.rows[1:], result.violations):

@@ -13,6 +13,7 @@ from datetime import date
 
 import streamlit as st
 
+from core.action_plan import STATUSES, clean_plan, overdue_ids, parse_due
 from core.checklist import AnswersError, build_checklist, by_theme, default_answers
 from core.loader import DataError, load_bases
 from core.report import build_report
@@ -71,6 +72,10 @@ def unset(key, **default):
 
 def go(step):
     st.session_state.step = step
+    if step == "result":
+        # the plan table starts from the saved plan each time the result screen is opened
+        st.session_state.plan_snapshot = st.session_state.get("plan", {})
+        st.session_state.plan_rev = st.session_state.get("plan_rev", 0) + 1
     st.rerun()
 
 
@@ -86,7 +91,7 @@ def offer_download(label, data, file_name, mime, primary=False):
 
 def offer_session_file(bases, responses):
     """Save the questionnaire and the answers given so far to a file kept by the user (4.12)."""
-    data = dump_session(bases, st.session_state.answers, responses)
+    data = dump_session(bases, st.session_state.answers, responses, st.session_state.get("plan", {}))
     offer_download("Сохранить проверку в файл", data, f"proverka-{date.today().isoformat()}.json",
                    "application/json")
     st.caption("Файл остаётся у вас. Чтобы продолжить или пройти повторную проверку, загрузите его на экране анкеты.")
@@ -112,6 +117,7 @@ def apply_session(session):
     st.session_state.answers = session.answers
     st.session_state.checklist = session.checklist
     st.session_state.responses = session.responses
+    st.session_state.plan = session.plan
     st.session_state.widgets = widgets
     st.session_state.load_warnings = session.warnings
     go("result" if session.complete else "fill")
@@ -354,7 +360,9 @@ def result_screen(bases):
             st.markdown(f"{n}. **{v.item['check']}**  \n"
                         f"{norm_ref(v.item)} · приоритет: {GROUP_LABELS[v.group]}")
 
-    with st.expander("Реестр всех нарушений по приоритету"):
+    plan_section(result)
+
+    with st.expander("Реестр всех нарушений по приоритету (с баллами S, O, D)"):
         st.dataframe([{
             "№": n, "Требование": v.item["check"], "Норма": norm_ref(v.item),
             "S": v.s, "O": v.o, "D": v.d, "Приоритет": GROUP_LABELS[v.group],
@@ -380,7 +388,8 @@ def result_screen(bases):
     for warning in WARNINGS:
         st.caption("⚠️ " + warning)
 
-    report = build_report(bases, st.session_state.answers, checklist, result, st.session_state.responses)
+    report = build_report(bases, st.session_state.answers, checklist, result, st.session_state.responses,
+                          plan=st.session_state.get("plan", {}))
     offer_download("Скачать отчёт (Word, DOCX)", report, REPORT_NAME, DOCX_MIME, primary=True)
     offer_session_file(bases, st.session_state.responses)
 
@@ -390,6 +399,46 @@ def result_screen(bases):
     if right.button("Новая проверка"):
         st.session_state.clear()
         st.rerun()
+
+
+def plan_section(result):
+    """Editable corrective action plan: action, owner, deadline, status for each violation (4.13)."""
+    st.subheader("План устранения нарушений")
+    if not result.violations:
+        st.session_state.plan = {}
+        st.caption("Нарушений нет — план не нужен.")
+        return
+    ids = [v.id for v in result.violations]
+    base = clean_plan(st.session_state.get("plan_snapshot", {}), ids)
+    label_to_status = {label: key for key, label in STATUSES.items()}
+    rows = [{
+        "№": n, "Нарушение": v.item["check"], "Приоритет": GROUP_LABELS[v.group],
+        "Мероприятие": base[v.id]["action"], "Ответственный": base[v.id]["owner"],
+        "Срок": parse_due(base[v.id]["due"]), "Статус": STATUSES[base[v.id]["status"]],
+    } for n, v in enumerate(result.violations, 1)]
+    edited = st.data_editor(
+        rows, key=f"plan_{st.session_state.get('plan_rev', 0)}", hide_index=True, num_rows="fixed",
+        disabled=["№", "Нарушение", "Приоритет"],
+        column_config={
+            "№": st.column_config.NumberColumn(width="small"),
+            "Нарушение": st.column_config.TextColumn(width="large"),
+            "Мероприятие": st.column_config.TextColumn(help="Что сделать, чтобы устранить нарушение"),
+            "Ответственный": st.column_config.TextColumn(help="Должность или ФИО"),
+            "Срок": st.column_config.DateColumn(format="DD.MM.YYYY"),
+            "Статус": st.column_config.SelectboxColumn(options=list(STATUSES.values()), required=True),
+        })
+    plan = {}
+    for v, row in zip(result.violations, edited):
+        due = parse_due(row["Срок"])
+        plan[v.id] = {"action": row["Мероприятие"] or "", "owner": row["Ответственный"] or "",
+                      "due": due.isoformat() if due else "", "status": label_to_status.get(row["Статус"], "new")}
+    st.session_state.plan = clean_plan(plan, ids)
+    late = overdue_ids(st.session_state.plan)
+    if late:
+        numbers = ", ".join(str(ids.index(i) + 1) for i in late)
+        st.warning(f"Просрочено мероприятий: {len(late)} (№ {numbers}). Срок прошёл, а статус не «устранено».")
+    st.caption("План попадает в отчёт Word и в файл проверки. Фамилии ответственных — персональные данные: "
+               "в демо указывайте должности или вымышленные имена.")
 
 
 # ---------- main ----------

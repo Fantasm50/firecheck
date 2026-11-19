@@ -2,7 +2,8 @@
 
 The file stays with the user: nothing is stored by the service. Format: UTF-8 JSON
     {"format": "firecheck-session", "version": 1, "saved": "2026-11-19",
-     "base_edition": "...", "answers": {...questionnaire...}, "responses": {item id: response}}
+     "base_edition": "...", "answers": {...questionnaire...}, "responses": {item id: response},
+     "plan": {item id: corrective action}}   # "plan" is optional (files saved before 2026-11-19)
 Loading never trusts the file: answers are checked as if typed in the questionnaire, responses
 for items that are no longer in the checklist or have unknown values are dropped with a warning.
 """
@@ -11,6 +12,7 @@ import json
 from dataclasses import dataclass
 from datetime import date
 
+from core.action_plan import clean_plan
 from core.checklist import AnswersError, build_checklist, default_answers
 from core.scoring import ANSWERS, VIOLATION
 
@@ -31,11 +33,12 @@ class Session:
     answers: dict      # questionnaire answers
     checklist: object  # checklist rebuilt from the answers with the current base
     responses: dict    # item id -> response, only for items of the checklist
+    plan: dict         # item id -> corrective action, only for violations
     warnings: list     # what was dropped or may be out of date
     complete: bool     # every item of the checklist has an answer
 
 
-def dump_session(bases, answers, responses, today=None):
+def dump_session(bases, answers, responses, plan=None, today=None):
     """Bytes of the session file."""
     data = {
         "format": FORMAT,
@@ -44,6 +47,7 @@ def dump_session(bases, answers, responses, today=None):
         "base_edition": bases.edition,
         "answers": answers,
         "responses": responses,
+        "plan": plan or {},
     }
     return json.dumps(data, ensure_ascii=False, indent=1).encode("utf-8")
 
@@ -96,5 +100,7 @@ def load_session(bases, raw):
     missing = len(in_checklist) - len(responses)
     if missing:
         warnings.append(f"Без ответа осталось пунктов: {missing}.")
-    return Session(answers=answers, checklist=checklist, responses=responses, warnings=warnings,
+    violations = [i for i, r in responses.items() if r["answer"] == VIOLATION]
+    plan = clean_plan(data.get("plan") or {}, violations)
+    return Session(answers=answers, checklist=checklist, responses=responses, plan=plan, warnings=warnings,
                    complete=missing == 0)
