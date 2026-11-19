@@ -17,6 +17,7 @@ from core.action_plan import STATUSES, clean_plan, overdue_ids, parse_due
 from core.checklist import AnswersError, build_checklist, by_theme, default_answers
 from core.loader import DataError, load_bases
 from core.plan_export import build_plan_xlsx
+from core.recheck import apply_recheck
 from core.report import build_report
 from core.scoring import NA, OK, VIOLATION, ResponsesError, check_responses, evaluate
 from core.session_file import SessionFileError, dump_session, load_session
@@ -92,7 +93,8 @@ def offer_download(label, data, file_name, mime, primary=False):
 
 def offer_session_file(bases, responses):
     """Save the questionnaire and the answers given so far to a file kept by the user (4.12)."""
-    data = dump_session(bases, st.session_state.answers, responses, st.session_state.get("plan", {}))
+    data = dump_session(bases, st.session_state.answers, responses, st.session_state.get("plan", {}),
+                        closed=st.session_state.get("closed", {}), history=st.session_state.get("history", []))
     offer_download("Сохранить проверку в файл", data, f"proverka-{date.today().isoformat()}.json",
                    "application/json")
     st.caption("Файл остаётся у вас. Чтобы продолжить или пройти повторную проверку, загрузите его на экране анкеты.")
@@ -119,6 +121,8 @@ def apply_session(session):
     st.session_state.checklist = session.checklist
     st.session_state.responses = session.responses
     st.session_state.plan = session.plan
+    st.session_state.closed = session.closed
+    st.session_state.history = session.history
     st.session_state.widgets = widgets
     st.session_state.load_warnings = session.warnings
     go("result" if session.complete else "fill")
@@ -333,6 +337,7 @@ def result_screen(bases):
     name = st.session_state.answers.get("name") or "Объект без названия"
     st.title(f"Результат самопроверки: {name}")
     show_validity_alerts(bases)
+    show_progress(result)
     left, right = st.columns([1, 2])
     with left:
         # critical status goes first: the index alone hides a threat to life (4.6, 4.8)
@@ -394,9 +399,12 @@ def result_screen(bases):
     offer_download("Скачать отчёт (Word, DOCX)", report, REPORT_NAME, DOCX_MIME, primary=True)
     offer_session_file(bases, st.session_state.responses)
 
-    left, right = st.columns(2)
+    left, middle, right = st.columns(3)
     if left.button("← К ответам"):
         go("fill")
+    if result.violations and middle.button("Повторная проверка открытых нарушений",
+                                           help="Пройти только открытые нарушения и отметить, устранены ли они"):
+        go("recheck")
     if right.button("Новая проверка"):
         st.session_state.clear()
         st.rerun()
@@ -438,11 +446,81 @@ def plan_section(result):
     if late:
         numbers = ", ".join(str(ids.index(i) + 1) for i in late)
         st.warning(f"Просрочено мероприятий: {len(late)} (№ {numbers}). Срок прошёл, а статус не «устранено».")
-    xlsx = build_plan_xlsx(result, st.session_state.plan, st.session_state.answers.get("name") or "")
+    xlsx = build_plan_xlsx(result, st.session_state.plan, st.session_state.answers.get("name") or "",
+                           closed=st.session_state.get("closed", {}),
+                           items={i["id"]: i for i in st.session_state.checklist.items})
     offer_download("Скачать план (Excel, XLSX)", xlsx, f"plan-ustraneniya-{date.today().isoformat()}.xlsx",
                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     st.caption("План попадает в отчёт Word, в таблицу Excel и в файл проверки. Фамилии ответственных — "
                "персональные данные: в демо указывайте должности или вымышленные имена.")
+
+
+def show_progress(result):
+    """After a re-inspection: what changed since the previous state, and what was fixed (4.14)."""
+    history = st.session_state.get("history", [])
+    if history:
+        last = history[-1]
+        was = "—" if last["index"] is None else f"{last['index']} %"
+        now = "—" if result.index is None else f"{result.index} %"
+        day = ".".join(reversed(last["date"].split("-")))
+        st.success(f"Повторная проверка {day}: индекс было {was} → стало {now}; нарушений {last['violations']} → "
+                   f"{len(result.violations)}; критических {last['critical']} → {len(result.critical)}.")
+    closed = st.session_state.get("closed", {})
+    if closed:
+        items = {i["id"]: i for i in st.session_state.checklist.items}
+        with st.expander(f"Устранено и подтверждено: {len(closed)}"):
+            st.dataframe([{
+                "Нарушение": items.get(k, {}).get("check", k), "Мероприятие": e["action"],
+                "Ответственный": e["owner"], "Подтверждено": ".".join(reversed(e["verified_on"].split("-"))),
+                "Комментарий": e["note"],
+            } for k, e in closed.items()], hide_index=True)
+
+
+# ---------- screen 4: re-inspection of open violations (4.14) ----------
+
+RECHECK_LABELS = {"fixed": "устранено", "open": "не устранено"}
+
+
+def recheck_screen(bases):
+    checklist = st.session_state.checklist
+    result = evaluate(bases, checklist, st.session_state.responses)
+    plan = st.session_state.get("plan", {})
+    name = st.session_state.answers.get("name") or "Объект без названия"
+    st.title(f"Повторная проверка: {name}")
+    st.caption("Пройдите только открытые нарушения. Отметьте, устранено ли каждое, и при необходимости "
+               "добавьте комментарий. Устранённые перейдут в «соответствует», план и индекс пересчитаются.")
+    decisions = {}
+    for n, v in enumerate(result.violations, 1):
+        entry = plan.get(v.id, {})
+        with st.container(border=True):
+            st.markdown(f"**{n}. {v.item['check']}**")
+            details = [norm_ref(v.item), f"приоритет: {GROUP_LABELS[v.group]}"]
+            if entry.get("action"):
+                details.append(f"мероприятие: {entry['action']}")
+            if entry.get("owner"):
+                details.append(f"ответственный: {entry['owner']}")
+            st.caption(" · ".join(details))
+            choice = st.radio("Итог", list(RECHECK_LABELS), format_func=RECHECK_LABELS.get, horizontal=True,
+                              index=None, key=f"k_{v.id}", label_visibility="collapsed")
+            note = st.text_input("Комментарий (необязательно)", key=f"n_{v.id}")
+            if choice:
+                decisions[v.id] = {"fixed": choice == "fixed", "note": note}
+    left, right = st.columns(2)
+    if left.button("← Отмена"):
+        go("result")
+    left_open = len(result.violations) - len(decisions)
+    if right.button("Сохранить итоги повторной проверки", type="primary", disabled=left_open > 0,
+                    help=f"Без отметки: {left_open}" if left_open else None):
+        r = apply_recheck(st.session_state.responses, plan, st.session_state.get("closed", {}),
+                          st.session_state.get("history", []), decisions, result)
+        for key in [k for k in st.session_state if isinstance(k, str) and k[:2] in ("a_", "c_", "r_", "w_", "k_", "n_")]:
+            del st.session_state[key]
+        st.session_state.responses = r.responses
+        st.session_state.plan = r.plan
+        st.session_state.closed = r.closed
+        st.session_state.history = r.history
+        st.session_state.widgets = session_widgets(r.responses)
+        go("result")
 
 
 # ---------- main ----------
@@ -461,6 +539,8 @@ def main():
     step = st.session_state.get("step", "form")
     if step == "fill":
         fill_screen(bases)
+    elif step == "recheck":
+        recheck_screen(bases)
     elif step == "result":
         result_screen(bases)
     else:

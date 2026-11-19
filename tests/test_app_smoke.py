@@ -67,3 +67,21 @@ def test_result_screen_shows_plan_and_overdue():
     at.run()
     assert not at.exception
     assert any("Просрочено мероприятий: 1" in w.value for w in at.warning)
+
+
+def test_recheck_through_the_interface():
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label.startswith("Демо")).click().run()
+    next(b for b in at.button if b.label.startswith("Повторная проверка")).click().run()
+    assert not at.exception
+    assert at.title[0].value.startswith("Повторная проверка")
+    radios = [r for r in at.radio if r.key and r.key.startswith("k_")]
+    assert len(radios) == 6                      # six open violations in the demo
+    for n, r in enumerate(radios):
+        r.set_value("fixed" if n == 0 else "open")
+    at.run()
+    next(b for b in at.button if b.label.startswith("Сохранить итоги")).click().run()
+    assert not at.exception
+    assert at.title[0].value.startswith("Результат самопроверки")
+    assert any("индекс было 86.0 %" in s.value and "нарушений 6 → 5" in s.value for s in at.success)
+    assert any("Критических нарушений" in s.value and "нет" in s.value for s in at.success)

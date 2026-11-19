@@ -20,8 +20,11 @@ OVERDUE_FILL = "F4C7C3"  # light red, as the high priority in the report
 THIN = Side(style="thin", color="BBBBBB")
 
 
-def build_plan_xlsx(result, plan, object_name="", on_date=None):
-    """Return the plan as .xlsx bytes. result: evaluate() result; plan: item id -> entry."""
+def build_plan_xlsx(result, plan, object_name="", on_date=None, closed=None, items=None):
+    """Return the plan as .xlsx bytes. result: evaluate() result; plan: item id -> entry.
+
+    closed: violations confirmed as fixed (4.14), shown on a second sheet; items: item id -> base item.
+    """
     on_date = on_date or date.today()
     wb = Workbook()
     ws = wb.active
@@ -70,6 +73,23 @@ def build_plan_xlsx(result, plan, object_name="", on_date=None):
     ws.page_setup.fitToWidth = 1
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.page_setup.fitToHeight = 0
+
+    if closed:
+        done = wb.create_sheet("Устранено")
+        titles = ["№", "Норма", "Нарушение", "Мероприятие", "Ответственный", "Подтверждено", "Комментарий"]
+        for col, (title, width) in enumerate(zip(titles, [5, 22, 60, 40, 22, 14, 40]), 1):
+            cell = done.cell(row=1, column=col, value=title)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill("solid", fgColor="E8E8E8")
+            done.column_dimensions[cell.column_letter].width = width
+        for n, (item_id, e) in enumerate(closed.items(), 1):
+            item = (items or {}).get(item_id, {"check": item_id})
+            row = [n, norm_ref(item) if "ppr" in item or "source" in item else "", item["check"], e.get("action", ""),
+                   e.get("owner", ""), parse_due(e.get("verified_on")), e.get("note", "")]
+            for col, value in enumerate(row, 1):
+                done.cell(row=n + 1, column=col, value=value).alignment = Alignment(wrap_text=True, vertical="top")
+            done.cell(row=n + 1, column=6).number_format = "DD.MM.YYYY"
+        done.freeze_panes = "A2"
 
     out = BytesIO()
     wb.save(out)
