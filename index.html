@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Цифровой сервис управления пожарной безопасностью (прототип)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.0/build/stlite.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.0/build/stlite.js";
+      mount(
+        {
+          requirements: ["python-docx==1.2.0", "pyyaml"],
+          entrypoint: "app.py",
+          files: {
+            "app.py": { url: "./app.py" },
+            "core/__init__.py": { url: "./core/__init__.py" },
+            "core/checklist.py": { url: "./core/checklist.py" },
+            "core/loader.py": { url: "./core/loader.py" },
+            "core/report.py": { url: "./core/report.py" },
+            "core/scoring.py": { url: "./core/scoring.py" },
+            "core/sources.py": { url: "./core/sources.py" },
+            "core/validity.py": { url: "./core/validity.py" },
+            "data/questionnaire.yaml": { url: "./data/questionnaire.yaml" },
+            "data/sources_lock.yaml": { url: "./data/sources_lock.yaml" },
+            "data/themes.yaml": { url: "./data/themes.yaml" },
+            "checklist_525.yaml": { url: "./checklist_525.yaml" },
+            "requirements_production.yaml": { url: "./requirements_production.yaml" },
+            "requirements_warehouse.yaml": { url: "./requirements_warehouse.yaml" },
+            "scores_production_draft.yaml": { url: "./scores_production_draft.yaml" },
+            "scores_warehouse_draft.yaml": { url: "./scores_warehouse_draft.yaml" }
+          },
+          streamlitConfig: { "client.toolbarMode": "minimal", "browser.gatherUsageStats": false },
+        },
+        document.getElementById("root"),
+      );
+    </script>
+  </body>
+</html>

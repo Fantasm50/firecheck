@@ -3,7 +3,12 @@
 Run from the project folder:  .venv/bin/streamlit run app.py
 Answers are processed by the server that runs the app (the user's computer for a local run, the hosting
 provider in the cloud) and kept only in memory for the current session; nothing is written to disk.
+The same file also runs inside the browser (stlite, index.html of the public repository): then nothing
+leaves the user's device.
 """
+
+import base64
+import sys
 
 import streamlit as st
 
@@ -27,9 +32,18 @@ WARNINGS = [
 st.set_page_config(page_title="Цифровой сервис управления пожарной безопасностью", layout="wide")
 
 # shown on every screen: honest note on the prototype status and on where the answers go
-PROTOTYPE_NOTICE = ("Прототип для демонстрации на вымышленных данных. Ответы обрабатываются на сервере, "
-                    "где запущен сервис, и не сохраняются после закрытия вкладки. "
-                    "Не вводите реальные данные предприятия.")
+REPORT_NAME = "otchet-samoproverka.docx"
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# stlite runs Python in the browser (Pyodide reports sys.platform == "emscripten")
+IN_BROWSER = sys.platform == "emscripten"
+if IN_BROWSER:
+    PROTOTYPE_NOTICE = ("Прототип для демонстрации на вымышленных данных. Сервис работает прямо в вашем "
+                        "браузере: ответы никуда не отправляются и пропадают после закрытия вкладки.")
+else:
+    PROTOTYPE_NOTICE = ("Прототип для демонстрации на вымышленных данных. Ответы обрабатываются на сервере, "
+                        "где запущен сервис, и не сохраняются после закрытия вкладки. "
+                        "Не вводите реальные данные предприятия.")
 
 
 @st.cache_resource
@@ -305,9 +319,14 @@ def result_screen(bases):
         st.caption("⚠️ " + warning)
 
     report = build_report(bases, st.session_state.answers, checklist, result, st.session_state.responses)
-    st.download_button("Скачать отчёт (Word, DOCX)", report, file_name="otchet-samoproverka.docx",
-                       mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                       type="primary")
+    if IN_BROWSER:
+        # in stlite the download button cannot fetch the file; a data: link needs no request at all
+        data = base64.b64encode(report).decode("ascii")
+        st.markdown(f'<a download="{REPORT_NAME}" href="data:{DOCX_MIME};base64,{data}">'
+                    "<b>⬇ Скачать отчёт (Word, DOCX)</b></a>", unsafe_allow_html=True)
+    else:
+        st.download_button("Скачать отчёт (Word, DOCX)", report, file_name=REPORT_NAME, mime=DOCX_MIME,
+                           type="primary")
 
     left, right = st.columns(2)
     if left.button("← К ответам"):
