@@ -4,6 +4,8 @@
 
 **Status (November 2026):** working research prototype on synthetic data. Not a production tool and not a substitute for a fire-safety inspection. The user interface, the regulatory base and the report are in Russian.
 
+**Try it online: https://fantasm50.github.io/firecheck/** — the app runs entirely in your browser (Streamlit on Pyodide via [stlite](https://github.com/whitphx/stlite)), so answers never leave your device. The first load takes up to a minute; then press «Демо: типовой механический цех».
+
 ![Result screen of the prototype on demo data: one critical violation is shown above the 86 % readiness index](docs/img/result.jpg)
 
 ## The problem
@@ -39,7 +41,9 @@ Design: experts first rank 20 concrete situations blind, then score S, O, D; rul
 
 ## How to run
 
-Requires Python 3.12+.
+Online: open the link above, nothing to install. The page is `index.html` in this repository, published with GitHub Pages.
+
+Locally (requires Python 3.12+):
 
 ```bash
 python3 -m venv .venv
