@@ -16,6 +16,7 @@ import streamlit as st
 from core.action_plan import STATUSES, clean_plan, overdue_ids, parse_due
 from core.checklist import AnswersError, build_checklist, by_theme, default_answers
 from core.loader import DataError, load_bases
+from core.plan_export import build_plan_xlsx
 from core.report import build_report
 from core.scoring import NA, OK, VIOLATION, ResponsesError, check_responses, evaluate
 from core.session_file import SessionFileError, dump_session, load_session
@@ -437,8 +438,11 @@ def plan_section(result):
     if late:
         numbers = ", ".join(str(ids.index(i) + 1) for i in late)
         st.warning(f"Просрочено мероприятий: {len(late)} (№ {numbers}). Срок прошёл, а статус не «устранено».")
-    st.caption("План попадает в отчёт Word и в файл проверки. Фамилии ответственных — персональные данные: "
-               "в демо указывайте должности или вымышленные имена.")
+    xlsx = build_plan_xlsx(result, st.session_state.plan, st.session_state.answers.get("name") or "")
+    offer_download("Скачать план (Excel, XLSX)", xlsx, f"plan-ustraneniya-{date.today().isoformat()}.xlsx",
+                   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.caption("План попадает в отчёт Word, в таблицу Excel и в файл проверки. Фамилии ответственных — "
+               "персональные данные: в демо указывайте должности или вымышленные имена.")
 
 
 # ---------- main ----------

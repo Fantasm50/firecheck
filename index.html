@@ -12,14 +12,15 @@
       import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.0/build/stlite.js";
       mount(
         {
-          requirements: ["python-docx==1.2.0", "pyyaml"],
+          requirements: ["python-docx==1.2.0", "pyyaml", "openpyxl==3.1.5"],
           entrypoint: "app.py",
           files: {
-            "app.py": { url: "./app.py?v=95c8b87e99" },
+            "app.py": { url: "./app.py?v=5d23a6e616" },
             "core/__init__.py": { url: "./core/__init__.py?v=12efe4c265" },
             "core/action_plan.py": { url: "./core/action_plan.py?v=1f1ef5bbdb" },
             "core/checklist.py": { url: "./core/checklist.py?v=88c4eb3935" },
             "core/loader.py": { url: "./core/loader.py?v=ee48f3c03b" },
+            "core/plan_export.py": { url: "./core/plan_export.py?v=759c6afa70" },
             "core/report.py": { url: "./core/report.py?v=539e88282a" },
             "core/scoring.py": { url: "./core/scoring.py?v=266544d3a5" },
             "core/session_file.py": { url: "./core/session_file.py?v=5b163dd822" },
