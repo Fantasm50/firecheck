@@ -1,0 +1,197 @@
+# Layer 2: questions of the official form (order of EMERCOM No 525 of 14.07.2026,
+# registered by the Ministry of Justice 15.09.2026 No 88269).
+#
+# SOURCE: DOCX text of the order (Консультант-style copy, "Приказ МЧС России от 14.07.2026 N 525.docx"),
+# cross-checked with the scanned PDF (document.pdf, OCR). Both agree on 27 questions and on all
+# item ranges of Rules No 1479. Question wording below is shortened/translated; the official
+# Russian wording is in the DOCX.
+# The "2.x" sub-questions are shortened in Q525-02.
+# Footnotes of the order (important, all from the DOCX):
+#   - Rules No 1479 (PPR) valid until 31.12.2026 inclusive (resolution No 1479, item 2).
+#   - Resolution No 1464 (AUPT/APS/SOUE requirements) valid until 01.03.2027.
+#   - Order No 1173 (fire notification systems design) valid until 28.02.2029.
+#   - Order No 1120 (training) valid until 01.09.2031.
+# Order No 525: published 15.09.2026 (pravo.gov.ru 0001202609150018, per factcheck-report.md; not opened by us),
+# entry into force 26.09.2026 by the 10-day rule (the text itself has no such item). Check on pravo.gov.ru.
+
+form:
+  order: "МЧС России от 14.07.2026 № 525"
+  minjust: "15.09.2026, № 88269"
+  replaces: "Приказ МЧС от 09.02.2022 № 78 и изменения (№ 1137, № 439, № 652)"
+  scope_note: "п. 2 приказа: проверка не ограничивается вопросами листа"
+  answers: [yes, no, not_applicable]   # 'not_applicable' needs a note
+  verified: false
+
+questions:
+  - id: Q525-01
+    question: "Which compliance condition for fire safety of the facility is chosen (123-FZ part 1 art. 6 etc.)? Sub-questions 1.1-1.6 (fire safety documents, fire risk, STU, standard of organisation, research/calculations, design documentation)"
+    refs: ["123-ФЗ ст. 4, 6, 20 (ч. 4, 6, ч. 1 ст. 6, ч. 5-8 ст. 20)", "69-ФЗ", "ППР № 1479 п. 2"]
+    topic: compliance_condition
+    verified: false
+
+  - id: Q525-02
+    question: "Is fire safety ensured by the chosen compliance condition? Sub-questions 2.1-2.16: fire distances, external water supply, access roads, structural and layout solutions, fire resistance, evacuation, rescue unit operations, explosion-fire category, automatic fire extinguishing and alarm, warning and evacuation control, other fire protection systems, interaction of systems, algorithm of systems, organisational measures of design, fire risk input data, product compliance"
+    refs:
+      - "123-ФЗ ст. 1, 4-6, 103, 104, 145-150, гл. 7, 8, 14-22, 26, 30, 31"
+      - "ТР ЕАЭС 043/2017 п. 12, 14-59, 61-93, 98, 101, 105, 108, 110, 111-113, 115-119 и приложение (решение Совета ЕЭК от 23.06.2017 № 40)"
+      - "Правила расчёта пожарного риска (пост. № 1084 от 22.07.2020), п. 5-8"
+      - "Требования к оснащению объектов АУПТ, АПС, СОУЭ (пост. № 1464 от 01.09.2021, действует до 01.03.2027)"
+      - "Требования к проектированию систем передачи извещений о пожаре (приказ МЧС от 24.11.2022 № 1173, рег. 71239, действует по 28.02.2029), п. 2-4, 7, 8, 10, 13, 14, 16, 18-20, 24"
+    topic: compliance_condition
+    verified: true   # checked against the DOCX text of the order
+
+  - id: Q525-03
+    question: "Has the controlled person submitted a fire safety declaration to the state fire supervision body?"
+    refs: ["123-ФЗ ч. 5 и 6 ст. 6, ст. 64"]
+    topic: declaration
+    verified: true   # confirmed by DOCX: this is item 3
+
+  - id: Q525-04
+    question: "Are fire safety requirements met that define the conduct of people, fire safety training, organisation of production and/or territory/building/premises maintenance?"
+    refs: ["69-ФЗ ст. 25", "ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 1-64", "Приказ МЧС от 16.12.2024 № 1120 (прил. 1 п. 1-3, 5-17, 19-24; прил. 2-4)"]
+    topic: general_regime_training
+    verified: false
+
+  - id: Q525-05
+    question: "Fire safety requirements for territories of settlements"
+    refs: ["ППР № 1479 п. 65-76"]
+    topic: territory
+    verified: false
+
+  - id: Q525-06
+    question: "Fire safety requirements for heating systems"
+    refs: ["ППР № 1479 п. 77-83"]
+    topic: heating
+    verified: false
+
+  - id: Q525-07
+    question: "Fire safety requirements for residential buildings"
+    refs: ["ППР № 1479 п. 84-87"]
+    topic: residential
+    verified: false
+
+  - id: Q525-08
+    question: "Fire safety requirements for scientific and educational organisations"
+    refs: ["ППР № 1479 п. 88-92"]
+    topic: education
+    verified: false
+
+  - id: Q525-09
+    question: "Fire safety requirements for cultural, educational and entertainment institutions"
+    refs: ["ППР № 1479 п. 93-102"]
+    topic: culture
+    verified: false
+
+  - id: Q525-10
+    question: "Fire safety requirements for trade facilities"
+    refs: ["ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 103-115"]
+    topic: trade
+    verified: false
+
+  - id: Q525-11
+    question: "Fire safety requirements for medical organisations"
+    refs: ["ППР № 1479 п. 116-120"]
+    topic: medical
+    verified: false
+
+  - id: Q525-12
+    question: "Fire safety requirements for production facilities"
+    refs: ["ППР № 1479 п. 121-166"]
+    topic: production        # TARGET for prototype
+    verified: false
+
+  - id: Q525-13
+    question: "Fire safety requirements for agricultural production facilities"
+    refs: ["ППР № 1479 п. 167-205"]
+    topic: agriculture
+    verified: false
+
+  - id: Q525-14
+    question: "Fire safety requirements for transport and transport infrastructure"
+    refs: ["ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 206-243"]
+    topic: transport
+    verified: false
+
+  - id: Q525-15
+    question: "Fire safety requirements for transportation of fire- and explosion-hazardous substances and materials"
+    refs: ["ППР № 1479 п. 244-264"]
+    topic: dangerous_goods_transport
+    verified: false
+
+  - id: Q525-16
+    question: "Fire safety requirements for drain and fill operations with liquefied petroleum gas"
+    refs: ["ППР № 1479 п. 265-285"]
+    topic: lpg
+    verified: false
+
+  - id: Q525-17
+    question: "Fire safety requirements for storage facilities"
+    refs: ["ППР № 1479 п. 286-307"]
+    topic: storage           # TARGET for prototype (warehouse)
+    verified: false
+
+  - id: Q525-18
+    question: "Fire safety requirements for construction, installation and restoration works"
+    refs: ["ППР № 1479 п. 308-336"]
+    topic: construction_works
+    verified: false
+
+  - id: Q525-19
+    question: "Fire safety requirements for fire-hazardous (hot) works"
+    refs: ["ППР № 1479 п. 337-372"]
+    topic: hot_works
+    verified: false
+
+  - id: Q525-20
+    question: "Fire safety requirements for filling stations"
+    refs: ["ППР № 1479 п. 373-391"]
+    topic: fuel_stations
+    verified: false
+
+  - id: Q525-21
+    question: "Requirements for fire safety instructions"
+    refs: ["ППР № 1479 п. 392-394"]
+    topic: instructions
+    verified: false
+
+  - id: Q525-22
+    question: "Fire safety requirements for provision of facilities with primary fire extinguishing means"
+    refs: ["ППР № 1479 п. 395-413"]
+    topic: extinguishers
+    verified: false
+
+  - id: Q525-23
+    question: "Procedure of issuing a settlement passport and a territory passport"
+    refs: ["ППР № 1479 п. 414-418"]
+    topic: passports
+    verified: false
+
+  - id: Q525-24
+    question: "Fire safety requirements for religious facilities"
+    refs: ["ППР № 1479 п. 419-428"]
+    topic: religious
+    verified: false
+
+  - id: Q525-25
+    question: "Fire safety requirements for children's recreation organisations with tents or temporary structures"
+    refs: ["ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 429-440"]
+    topic: children_camps
+    verified: false
+
+  - id: Q525-26
+    question: "Fire safety requirements for storage, use and sale of household pyrotechnic products"
+    refs: ["ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 441-448"]
+    topic: pyrotechnics_household
+    verified: false
+
+  - id: Q525-27
+    question: "Fire safety requirements for stage effects, pyrotechnics and fire effects at concerts and sports events with mass attendance"
+    refs: ["ТР ТС 006/2011 ст. 3, 4, 6, 7, 9 и прил. 2", "ППР № 1479 п. 449-458"]
+    topic: pyrotechnics_events
+    verified: false
+
+# Questions relevant for the prototype (production or warehouse object):
+prototype_scope:
+  # Q525-05 added: items 71 and 73 apply to the enterprise territory (see requirements_production.yaml)
+  production: [Q525-01, Q525-02, Q525-03, Q525-04, Q525-05, Q525-06, Q525-12, Q525-19, Q525-21, Q525-22]
+  warehouse:  [Q525-01, Q525-02, Q525-03, Q525-04, Q525-06, Q525-17, Q525-19, Q525-21, Q525-22]

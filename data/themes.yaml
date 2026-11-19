@@ -1,0 +1,21 @@
+# Screen themes: how checklist items are grouped on the filling screen and in the report.
+# Source: project-spec.md, 4.10. Order of themes = order on screen.
+# Every "topic" used by a demo item must appear here exactly once (checked by core/loader.py).
+
+themes:
+  - name: "Эвакуация"
+    topics: [evacuation, signs, fire_doors]
+  - name: "Системы защиты"
+    topics: [systems_required, maintenance, water_supply, ventilation, fire_post, fire_resistance, access]
+  - name: "Первичные средства пожаротушения"
+    topics: [extinguishers]
+  - name: "Электрика и отопление"
+    topics: [electrical, heating]
+  - name: "Технологический процесс"
+    topics: [process, hazardous_materials, protection_devices, cleaning, oily_rags]
+  - name: "Огневые работы"
+    topics: [hot_works]
+  - name: "Содержание территории и помещений"
+    topics: [territory, storage_rules, smoking, living]
+  - name: "Документы"
+    topics: [instructions, training, categories, logbook, compliance_condition, design_documents, fire_risk, special_conditions, declaration]

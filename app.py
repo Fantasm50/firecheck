@@ -1,0 +1,340 @@
+"""Streamlit interface: questionnaire -> checklist -> result (project-spec.md, 4.1–4.8).
+
+Run from the project folder:  .venv/bin/streamlit run app.py
+Answers are processed by the server that runs the app (the user's computer for a local run, the hosting
+provider in the cloud) and kept only in memory for the current session; nothing is written to disk.
+"""
+
+import streamlit as st
+
+from core.checklist import AnswersError, build_checklist, by_theme, default_answers
+from core.loader import DataError, load_bases
+from core.report import build_report
+from core.scoring import NA, OK, VIOLATION, ResponsesError, check_responses, evaluate
+from core.validity import EXPIRED, validity_alerts
+
+ANSWER_LABELS = {OK: "соответствует", VIOLATION: "не соответствует", NA: "не применимо"}
+GROUP_LABELS = {"H": "высокий", "M": "средний", "L": "низкий"}
+CHOICE_LABELS = {"yes": "да", "no": "нет", "unknown": "не знаю"}
+
+WARNINGS = [
+    "Самопроверка не заменяет проверку органа надзора; проверка МЧС не ограничивается "
+    "вопросами проверочного листа (п. 2 приказа МЧС № 525).",
+    "Версия базы норм: ППР № 1479 в редакции от 03.02.2025, действуют до 31.12.2026.",
+    "Баллы S, O, D — черновые, до экспертной проверки.",
+]
+
+st.set_page_config(page_title="Цифровой сервис управления пожарной безопасностью", layout="wide")
+
+# shown on every screen: honest note on the prototype status and on where the answers go
+PROTOTYPE_NOTICE = ("Прототип для демонстрации на вымышленных данных. Ответы обрабатываются на сервере, "
+                    "где запущен сервис, и не сохраняются после закрытия вкладки. "
+                    "Не вводите реальные данные предприятия.")
+
+
+@st.cache_resource
+def get_bases():
+    return load_bases()
+
+
+def norm_ref(item):
+    """Reference for the user: PPR item, or the source field for DOC items (4.7)."""
+    return f"ППР № 1479, п. {item['ppr']}" if item.get("ppr") else item.get("source", "")
+
+
+def keep(key, value):
+    """Restore a widget value saved earlier (Streamlit forgets widgets that were not shown)."""
+    if key not in st.session_state and value is not None:
+        st.session_state[key] = value
+
+
+def unset(key, **default):
+    """Pass a default only for a new widget: a restored widget takes its value from session state."""
+    return {} if key in st.session_state else default
+
+
+def go(step):
+    st.session_state.step = step
+    st.rerun()
+
+
+# ---------- screen 1: questionnaire (4.1) ----------
+
+# Demo scenario (demo-scenario.md): fictional mechanical shop, 43 items, 6 violations,
+# readiness index 86.0. Answer texts match the first words of the item "check" field.
+DEMO_OBJECT = {
+    "name": "Механический цех (демо)",
+    "category": "В3",
+    "people_max": 60,
+    "workplaces_per_floor": 20,
+    "has_aps": True,
+    "has_soue": True,
+    "has_indoor_hydrants": True,
+    "has_outdoor_water": True,
+    "uses_oils_paints": True,
+    "does_hot_work": True,
+    "aupt_required": "no",  # fictional: rooms of category В3 are smaller than 1000 m² (res. No 1464, app. 3)
+}
+DEMO_VIOLATION_PREFIXES = (
+    "Эвакуационные пути и выходы", "Нет изменений планировки", "При монтаже, ремонте",
+    "Оборудованы пожарные щиты", "Место огневых работ", "Чердаки",
+)
+
+
+def demo_fill(bases):
+    """Fill the questionnaire and the checklist with the demo scenario and show the result."""
+    answers = default_answers(bases)
+    answers.update(DEMO_OBJECT)
+    checklist = build_checklist(bases, answers)
+    responses = {}
+    for item in checklist.items:
+        answer = VIOLATION if item["check"].startswith(DEMO_VIOLATION_PREFIXES) else OK
+        responses[item["id"]] = {"answer": answer}
+    st.session_state.answers = answers
+    st.session_state.checklist = checklist
+    st.session_state.responses = responses
+    st.session_state.widgets = {f"a_{i['id']}": responses[i["id"]]["answer"] for i in checklist.items}
+    go("result")
+
+
+def show_validity_alerts(bases):
+    """Warn when an act behind the norms base expires soon or has expired (4.11)."""
+    for alert in validity_alerts(bases):
+        (st.error if alert.level == EXPIRED else st.warning)("⚠️ " + alert.text)
+
+
+def questionnaire_screen(bases):
+    qn = bases.questionnaire
+    saved = st.session_state.get("answers", {})
+    st.title("Анкета объекта")
+    st.caption("Производственный объект: цех, мастерская.")
+    show_validity_alerts(bases)
+
+    left, right = st.columns([1, 2])
+    if left.button("Демо: типовой механический цех", help="Заполнить анкету и чек-лист данными демо-сценария "
+                   "(вымышленный объект, 43 пункта, 6 нарушений) и сразу показать результат"):
+        demo_fill(bases)
+
+    for key in ("name", *(n["id"] for n in qn["numbers"]), *(f["id"] for f in qn["flags"]),
+                *(c["id"] for c in qn["choices"])):
+        keep(f"q_{key}", saved.get(key))
+
+    st.text_input("Название объекта (необязательно)", key="q_name")
+    cols = st.columns(2)
+    for col, number in zip(cols, qn["numbers"]):
+        key = f"q_{number['id']}"
+        col.number_input(number["label"], min_value=0, step=1, key=key, **unset(key, value=None))
+
+    for choice in qn["choices"]:
+        options = choice["options"]
+        if choice["id"] == "category":
+            key = f"q_{choice['id']}"
+            st.selectbox(choice["label"], options, placeholder="не выбрано", key=key,
+                         **unset(key, index=None))
+        else:
+            keep(f"q_{choice['id']}", choice["default"])
+            st.radio(choice["label"], options, horizontal=True, help=choice.get("hint"),
+                     format_func=lambda v: CHOICE_LABELS.get(v, v), key=f"q_{choice['id']}")
+
+    sections = {}
+    for flag in qn["flags"]:
+        sections.setdefault(flag["section"], []).append(flag)
+    for section, flags in sections.items():
+        st.subheader(section)
+        for flag in flags:
+            st.checkbox(flag["label"], help=flag.get("hint"), key=f"q_{flag['id']}")
+
+    if st.button("Сформировать чек-лист", type="primary"):
+        answers = default_answers(bases)
+        for key in list(answers) + ["name"]:
+            value = st.session_state.get(f"q_{key}")
+            if value is not None and value != "":
+                answers[key] = value
+        try:
+            checklist = build_checklist(bases, answers)
+        except AnswersError as err:
+            for problem in err.problems:
+                st.error(problem)
+            return
+        st.session_state.answers = answers
+        st.session_state.checklist = checklist
+        go("fill")
+
+
+# ---------- screen 2: filling the checklist (4.3, 4.4) ----------
+
+def read_responses(items):
+    """Collect responses from widgets; items without an answer are left out."""
+    responses = {}
+    for item in items:
+        answer = st.session_state.get(f"a_{item['id']}")
+        if answer is None:
+            continue
+        r = {"answer": answer, "comment": st.session_state.get(f"c_{item['id']}", "")}
+        if answer == VIOLATION and st.session_state.get(f"r_{item['id']}"):
+            r["o_raise"] = 1
+            r["o_reason"] = st.session_state.get(f"w_{item['id']}", "")
+        responses[item["id"]] = r
+    return responses
+
+
+def fill_screen(bases):
+    checklist = st.session_state.checklist
+    items = checklist.items
+    saved = st.session_state.get("widgets", {})
+    for key, value in saved.items():
+        keep(key, value)
+
+    name = st.session_state.answers.get("name") or "Объект без названия"
+    st.title(f"Чек-лист: {name}")
+    answered = sum(1 for i in items if st.session_state.get(f"a_{i['id']}") is not None)
+    st.progress(answered / len(items), text=f"Отвечено {answered} из {len(items)}")
+    st.caption(f"По анкете скрыто пунктов: {checklist.hidden_count}")
+
+    for theme, group in by_theme(bases, items):
+        with st.expander(f"{theme} ({len(group)})", expanded=True):
+            for item in group:
+                item_card(bases, item)
+
+    # remember widget values to restore them after visiting other screens
+    st.session_state.widgets = {k: v for k, v in st.session_state.items()
+                                if isinstance(k, str) and k[:2] in ("a_", "c_", "r_", "w_")}
+
+    responses = read_responses(items)
+    problems = check_responses(bases, items, responses)
+    unanswered = [p for p in problems if p.endswith("нет ответа")]
+    other = [p for p in problems if not p.endswith("нет ответа")]
+    for problem in other:
+        st.warning(problem)
+    left, right = st.columns(2)
+    if left.button("← Изменить анкету"):
+        go("form")
+    if right.button("Показать результат", type="primary", disabled=bool(problems),
+                    help=f"Осталось без ответа: {len(unanswered)}" if unanswered else None):
+        st.session_state.responses = responses
+        go("result")
+
+
+def item_card(bases, item):
+    item_id = item["id"]
+    with st.container(border=True):
+        st.markdown(f"**{item['check']}**")
+        st.caption(f"{norm_ref(item)} · вопрос листа {item['q525'].replace('Q525-', '№ ')} · {item_id}")
+        if item.get("note"):
+            st.info(item["note"])
+        key = f"a_{item_id}"
+        answer = st.radio("Ответ", list(ANSWER_LABELS), horizontal=True, format_func=ANSWER_LABELS.get,
+                          key=key, label_visibility="collapsed", **unset(key, index=None))
+        if answer == NA:
+            st.text_input("Почему не применимо (обязательно)", key=f"c_{item_id}")
+        elif answer == VIOLATION:
+            st.text_input("Комментарий (необязательно)", key=f"c_{item_id}")
+            if bases.scores[item_id]["o"] < 5:
+                if st.checkbox("Нарушение массовое или постоянное (повысить вероятность O на 1)", key=f"r_{item_id}"):
+                    st.text_input("Причина повышения (обязательно)", key=f"w_{item_id}")
+
+
+# ---------- screen 3: result (4.6–4.8) ----------
+
+def result_screen(bases):
+    checklist = st.session_state.checklist
+    try:
+        result = evaluate(bases, checklist, st.session_state.responses)
+    except ResponsesError as err:
+        for problem in err.problems:
+            st.error(problem)
+        if st.button("← К ответам"):
+            go("fill")
+        return
+
+    name = st.session_state.answers.get("name") or "Объект без названия"
+    st.title(f"Результат самопроверки: {name}")
+    show_validity_alerts(bases)
+    left, right = st.columns([1, 2])
+    with left:
+        # critical status goes first: the index alone hides a threat to life (4.6, 4.8)
+        if result.critical:
+            st.error(f"### Критических нарушений: {len(result.critical)}\n"
+                     "Угроза жизни людей (S = 5). Устранить в первую очередь.")
+        else:
+            st.success("Критических нарушений (угроза жизни, S = 5) нет.")
+        index = "—" if result.index is None else f"{result.index} %"
+        st.metric("Индекс готовности", index)
+        if result.index is None:
+            st.caption("Нет пунктов с оценкой: индекс не считается.")
+        counts = result.group_counts
+        st.caption(f"Нарушений: {len(result.violations)} (приоритет высокий {counts['H']} · "
+                   f"средний {counts['M']} · низкий {counts['L']}) · «не применимо»: {result.na_count} · "
+                   f"скрыто по анкете: {result.hidden_count}")
+        if result.na_unconditional:
+            st.warning(f"«Не применимо» у пунктов, обязательных для всех объектов: "
+                       f"{', '.join(result.na_unconditional)}. Проверьте комментарии: "
+                       "эти пункты не входят ни в индекс, ни в реестр нарушений.")
+    with right:
+        st.subheader("Топ-5 нарушений по приоритету")
+        if not result.top5:
+            st.success("Нарушений не выявлено.")
+        for n, v in enumerate(result.top5, 1):
+            st.markdown(f"{n}. **{v.item['check']}**  \n"
+                        f"{norm_ref(v.item)} · приоритет: {GROUP_LABELS[v.group]}")
+
+    with st.expander("Реестр всех нарушений по приоритету"):
+        st.dataframe([{
+            "№": n, "Требование": v.item["check"], "Норма": norm_ref(v.item),
+            "S": v.s, "O": v.o, "D": v.d, "Приоритет": GROUP_LABELS[v.group],
+            "Срок устранения": "", "Ответственный": "",
+        } for n, v in enumerate(result.violations, 1)], hide_index=True)
+
+    with st.expander("Матрица 5 × 5: число нарушений по тяжести S и вероятности O"):
+        rows = []
+        for s in range(5, 0, -1):
+            row = {"S \\ O": s}
+            for o in range(1, 6):
+                count = result.cells.get((s, o), 0)
+                row[str(o)] = f"{count} ({bases.matrix[s][o - 1]})" if count else bases.matrix[s][o - 1]
+            rows.append(row)
+        st.dataframe(rows, hide_index=True)
+        st.caption("В клетке: число нарушений и группа приоритета (H — высокий, M — средний, L — низкий).")
+
+    with st.expander("Покрытие вопросов проверочного листа (приказ МЧС № 525)"):
+        st.dataframe([{"Вопрос": bases.questions[q]["id"].replace("Q525-", "№ "), "Пунктов в чек-листе": n,
+                       "Статус": status} for q, n, status in result.coverage], hide_index=True)
+        st.caption("Остальные 17 вопросов листа в прототипе не проверяются.")
+
+    for warning in WARNINGS:
+        st.caption("⚠️ " + warning)
+
+    report = build_report(bases, st.session_state.answers, checklist, result, st.session_state.responses)
+    st.download_button("Скачать отчёт (Word, DOCX)", report, file_name="otchet-samoproverka.docx",
+                       mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                       type="primary")
+
+    left, right = st.columns(2)
+    if left.button("← К ответам"):
+        go("fill")
+    if right.button("Новая проверка"):
+        st.session_state.clear()
+        st.rerun()
+
+
+# ---------- main ----------
+
+def main():
+    try:
+        bases = get_bases()
+    except DataError as err:
+        st.error("Не удалось загрузить базы норм.")
+        for problem in err.problems:
+            st.write("- " + problem)
+        return
+    st.info(PROTOTYPE_NOTICE, icon="ℹ️")
+    step = st.session_state.get("step", "form")
+    if step == "fill":
+        fill_screen(bases)
+    elif step == "result":
+        result_screen(bases)
+    else:
+        questionnaire_screen(bases)
+
+
+main()

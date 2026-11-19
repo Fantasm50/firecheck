@@ -1,0 +1,16 @@
+.venv/
+.git/
+.pytest_cache/
+__pycache__/
+*.pyc
+.claude/
+.DS_Store
+sources/
+presentation-assets/
+*.docx
+*.pptx
+*.pdf
+*.key
+*.zip
+*.md
+!README.md

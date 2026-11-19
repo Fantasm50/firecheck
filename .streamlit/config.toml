@@ -1,0 +1,14 @@
+# Streamlit settings for this project only.
+
+[browser]
+# Do not send anonymous usage statistics to Streamlit developers.
+gatherUsageStats = false
+
+[client]
+# Hide developer items (Deploy button, rerun, settings) from the top toolbar.
+toolbarMode = "minimal"
+
+[server]
+# Listen on all interfaces so the app also works in Docker and the cloud.
+# For a local-only run use:  streamlit run app.py --server.address localhost
+# headless = true is set by the "Deploy to Streamlit Cloud" flow automatically.

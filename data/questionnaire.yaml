@@ -1,0 +1,78 @@
+# Questionnaire of the production object. Source: project-spec.md, 4.1 and 4.9.1.
+# The flag ids are used in "applies_if" of requirements_production.yaml.
+# core/loader.py checks that every flag in applies_if is listed here (in "flags" or "derived").
+
+# Required numbers (integers, >= 0)
+numbers:
+  - {id: people_max, label: "Наибольшее число людей в здании одновременно"}
+  - {id: workplaces_per_floor, label: "Наибольшее число постоянных рабочих мест на этаже"}
+
+# Yes / no questions, default "no"
+flags:
+  # fire protection systems
+  - {section: "Системы противопожарной защиты", id: has_aps, label: "Есть автоматическая пожарная сигнализация (АПС)"}
+  - {section: "Системы противопожарной защиты", id: has_soue, label: "Есть система оповещения и управления эвакуацией (СОУЭ)"}
+  - {section: "Системы противопожарной защиты", id: has_aupt, label: "Есть автоматическая установка пожаротушения (АУПТ)"}
+  - {section: "Системы противопожарной защиты", id: has_indoor_hydrants, label: "Есть внутренний противопожарный водопровод"}
+  - {section: "Системы противопожарной защиты", id: has_fire_pumps, label: "Есть пожарные насосы или задвижки с электроприводом"}
+  - {section: "Системы противопожарной защиты", id: has_outdoor_water, label: "Есть наружное противопожарное водоснабжение в зоне ответственности"}
+  - {section: "Системы противопожарной защиты", id: has_fire_post, label: "Есть пожарный пост или диспетчерская"}
+  - {section: "Системы противопожарной защиты", id: has_fire_dampers, label: "Есть огнезадерживающие клапаны в воздуховодах"}
+  - {section: "Системы противопожарной защиты", id: has_external_stairs, label: "Есть наружные пожарные или эвакуационные лестницы, ограждения кровли"}
+  - {section: "Системы противопожарной защиты", id: has_fire_retardant, label: "Строительные конструкции обработаны огнезащитой"}
+  - {section: "Системы противопожарной защиты", id: systems_over_life, label: "Системы противопожарной защиты работают сверх срока службы или нет данных изготовителя"}
+  # technology and heating
+  - {section: "Технология и отопление", id: uses_hazardous_substances, label: "Применяются пожаро- и пожаровзрывоопасные вещества"}
+  - {section: "Технология и отопление", id: uses_oils_paints, label: "Работа с маслами, лаками, красками, ЛВЖ и ГЖ"}
+  - {section: "Технология и отопление", id: has_exhaust_deposits, label: "Есть вытяжные устройства, аппараты или трубопроводы с пожароопасными отложениями"}
+  - {section: "Технология и отопление", id: has_dust_collectors, label: "Есть пылесборные камеры или циклоны"}
+  - {section: "Технология и отопление", id: has_ignition_protection, label: "На оборудовании есть искрогасители, молниезащита или защита от статического электричества"}
+  - {section: "Технология и отопление", id: has_flame_arresters, label: "Есть огнепреградители"}
+  - {section: "Технология и отопление", id: has_heating_units, label: "Есть печи, котельные или калориферы"}
+  - {section: "Технология и отопление", id: has_boiler, label: "Есть котельная или теплопроизводящая установка"}
+  - {section: "Технология и отопление", id: does_hot_work, label: "Проводятся огневые работы"}
+  - {section: "Технология и отопление", id: hot_work_on_equipment, label: "Огневые работы проводятся на технологическом оборудовании"}
+  # documents
+  - {section: "Документы", id: has_design_docs, label: "Есть проектная документация"}
+  - {section: "Документы", id: uses_risk_calc, label: "Соответствие обосновано расчётом пожарного риска, исследованиями или испытаниями"}
+  - {section: "Документы", id: has_stu, label: "Применяются СТУ или стандарт организации"}
+  - {section: "Документы", id: needs_declaration, label: "Объект подлежит декларированию пожарной безопасности", hint: "Уточните критерии по ст. 64 123-ФЗ"}
+
+# Questions with a fixed set of answers
+choices:
+  - id: water_required
+    label: "Обязано ли здание по нормам иметь внутренний водопровод или АУПТ"
+    hint: "Смотрите проектную документацию"
+    # quoted on purpose: unquoted yes / no are read by YAML as true / false
+    options: ["yes", "no", "unknown"]
+    default: "unknown"
+  # Required systems (resolution No 1464, valid until 01.03.2027; added 2026-11-17).
+  # The program does not decide whether a system is required: it depends on category and area of each room.
+  - id: aps_required
+    label: "Обязано ли здание по нормам иметь автоматическую пожарную сигнализацию (АПС)"
+    hint: "Смотрите проектную документацию. Для зданий, введённых до вступления в силу 123-ФЗ, — пост. № 1464, прил. 1 и 3: зависит от категории и площади помещений"
+    options: ["yes", "no", "unknown"]
+    default: "unknown"
+  - id: soue_required
+    label: "Обязано ли здание по нормам иметь систему оповещения и управления эвакуацией (СОУЭ)"
+    hint: "Производственным и складским зданиям СОУЭ нужна почти всегда (пост. № 1464, прил. 5, п. 21; исключение — прим. 6)"
+    options: ["yes", "no", "unknown"]
+    default: "unknown"
+  - id: aupt_required
+    label: "Обязано ли здание по нормам иметь автоматическую установку пожаротушения (АУПТ)"
+    hint: "Смотрите проектную документацию. Для зданий, введённых до вступления в силу 123-ФЗ, — пост. № 1464, прил. 1, 3 и 4"
+    options: ["yes", "no", "unknown"]
+    default: "unknown"
+  - id: category
+    label: "Наивысшая категория помещений по взрывопожарной и пожарной опасности"
+    options: ["А", "Б", "В1", "В2", "В3", "В4", "Г", "Д"]
+    default: null
+
+# Flags computed by the program from the answers above (project-spec.md, 4.1)
+derived:
+  - {id: many_people, rule: "people_max >= 50 or workplaces_per_floor >= 10"}
+  - {id: mass_people, rule: "people_max >= 50"}
+  - {id: no_water_no_aupt, rule: "not has_indoor_hydrants and not has_aupt and water_required != no"}
+  - {id: aps_missing, rule: "not has_aps and aps_required != no"}
+  - {id: soue_missing, rule: "not has_soue and soue_required != no"}
+  - {id: aupt_missing, rule: "not has_aupt and aupt_required != no"}
