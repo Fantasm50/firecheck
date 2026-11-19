@@ -9,6 +9,7 @@ leaves the user's device.
 
 import base64
 import sys
+from datetime import date
 
 import streamlit as st
 
@@ -16,6 +17,7 @@ from core.checklist import AnswersError, build_checklist, by_theme, default_answ
 from core.loader import DataError, load_bases
 from core.report import build_report
 from core.scoring import NA, OK, VIOLATION, ResponsesError, check_responses, evaluate
+from core.session_file import SessionFileError, dump_session, load_session
 from core.validity import EXPIRED, validity_alerts
 
 ANSWER_LABELS = {OK: "соответствует", VIOLATION: "не соответствует", NA: "не применимо"}
@@ -70,6 +72,64 @@ def unset(key, **default):
 def go(step):
     st.session_state.step = step
     st.rerun()
+
+
+def offer_download(label, data, file_name, mime, primary=False):
+    """Download button; in stlite the button cannot fetch the file, so a data: link is used instead."""
+    if IN_BROWSER:
+        encoded = base64.b64encode(data).decode("ascii")
+        st.markdown(f'<a download="{file_name}" href="data:{mime};base64,{encoded}"><b>⬇ {label}</b></a>',
+                    unsafe_allow_html=True)
+    else:
+        st.download_button(label, data, file_name=file_name, mime=mime, type="primary" if primary else "secondary")
+
+
+def offer_session_file(bases, responses):
+    """Save the questionnaire and the answers given so far to a file kept by the user (4.12)."""
+    data = dump_session(bases, st.session_state.answers, responses)
+    offer_download("Сохранить проверку в файл", data, f"proverka-{date.today().isoformat()}.json",
+                   "application/json")
+    st.caption("Файл остаётся у вас. Чтобы продолжить или пройти повторную проверку, загрузите его на экране анкеты.")
+
+
+def session_widgets(responses):
+    """Widget values of the checklist screen for saved responses (keys a_, c_, r_, w_ as in item_card)."""
+    widgets = {}
+    for item_id, r in responses.items():
+        widgets[f"a_{item_id}"] = r["answer"]
+        widgets[f"c_{item_id}"] = r.get("comment", "")
+        if r.get("o_raise") == 1:
+            widgets[f"r_{item_id}"] = True
+            widgets[f"w_{item_id}"] = r.get("o_reason", "")
+    return widgets
+
+
+def apply_session(session):
+    """Put a loaded session into the screens' state: questionnaire, checklist and answer widgets."""
+    for key in [k for k in st.session_state if isinstance(k, str) and k[:2] in ("q_", "a_", "c_", "r_", "w_")]:
+        del st.session_state[key]
+    widgets = session_widgets(session.responses)
+    st.session_state.answers = session.answers
+    st.session_state.checklist = session.checklist
+    st.session_state.responses = session.responses
+    st.session_state.widgets = widgets
+    st.session_state.load_warnings = session.warnings
+    go("result" if session.complete else "fill")
+
+
+def load_session_widget(bases):
+    """Questionnaire screen: continue a self-check saved earlier."""
+    uploaded = st.file_uploader("Продолжить сохранённую проверку (файл .json)", type=["json"])
+    if uploaded is None or st.session_state.get("loaded_file") == uploaded.file_id:
+        return
+    st.session_state.loaded_file = uploaded.file_id  # load each file once, not on every rerun
+    try:
+        session = load_session(bases, uploaded.getvalue())
+    except SessionFileError as err:
+        for problem in err.problems:
+            st.error(problem)
+        return
+    apply_session(session)
 
 
 # ---------- screen 1: questionnaire (4.1) ----------
@@ -128,6 +188,7 @@ def questionnaire_screen(bases):
     if left.button("Демо: типовой механический цех", help="Заполнить анкету и чек-лист данными демо-сценария "
                    "(вымышленный объект, 43 пункта, 6 нарушений) и сразу показать результат"):
         demo_fill(bases)
+    load_session_widget(bases)
 
     for key in ("name", *(n["id"] for n in qn["numbers"]), *(f["id"] for f in qn["flags"]),
                 *(c["id"] for c in qn["choices"])):
@@ -220,6 +281,7 @@ def fill_screen(bases):
     other = [p for p in problems if not p.endswith("нет ответа")]
     for problem in other:
         st.warning(problem)
+    offer_session_file(bases, responses)
     left, right = st.columns(2)
     if left.button("← Изменить анкету"):
         go("form")
@@ -319,14 +381,8 @@ def result_screen(bases):
         st.caption("⚠️ " + warning)
 
     report = build_report(bases, st.session_state.answers, checklist, result, st.session_state.responses)
-    if IN_BROWSER:
-        # in stlite the download button cannot fetch the file; a data: link needs no request at all
-        data = base64.b64encode(report).decode("ascii")
-        st.markdown(f'<a download="{REPORT_NAME}" href="data:{DOCX_MIME};base64,{data}">'
-                    "<b>⬇ Скачать отчёт (Word, DOCX)</b></a>", unsafe_allow_html=True)
-    else:
-        st.download_button("Скачать отчёт (Word, DOCX)", report, file_name=REPORT_NAME, mime=DOCX_MIME,
-                           type="primary")
+    offer_download("Скачать отчёт (Word, DOCX)", report, REPORT_NAME, DOCX_MIME, primary=True)
+    offer_session_file(bases, st.session_state.responses)
 
     left, right = st.columns(2)
     if left.button("← К ответам"):
@@ -347,6 +403,8 @@ def main():
             st.write("- " + problem)
         return
     st.info(PROTOTYPE_NOTICE, icon="ℹ️")
+    for warning in st.session_state.pop("load_warnings", []):
+        st.warning(warning)
     step = st.session_state.get("step", "form")
     if step == "fill":
         fill_screen(bases)
