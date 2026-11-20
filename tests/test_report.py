@@ -52,7 +52,7 @@ def test_title_and_summary(t8):
     assert "03.02.2025" in text
     assert "94.6 %" in text
     assert "соответствует: 35; не соответствует: 2; не применимо: 2" in text
-    assert "По анкете скрыто пунктов: 24" in text
+    assert "По анкете скрыто пунктов: 30" in text
     assert "Критических нарушений (угроза жизни, S = 5): 0" in text
     assert "высокий — 1, средний — 1, низкий — 0" in text
     assert "обязательных для всех объектов: TER-001, TER-002" in text

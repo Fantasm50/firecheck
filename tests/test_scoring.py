@@ -120,7 +120,7 @@ def test_t8_index_and_coverage(bases, case_a):
     assert result.index == Decimal("94.6")
     assert [(v.id, v.group) for v in result.violations] == [("GEN-022", "H"), ("PROD-010", "M")]
     assert result.na_count == 2
-    assert result.hidden_count == 24
+    assert result.hidden_count == 30
     assert result.coverage == [
         ("Q525-01", 1, ALL_OK), ("Q525-02", 3, ALL_OK), ("Q525-03", 0, NOT_RELEVANT),
         ("Q525-04", 20, HAS_VIOLATIONS), ("Q525-05", 2, ALL_NA), ("Q525-06", 1, ALL_OK),

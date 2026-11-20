@@ -25,7 +25,7 @@ Additional safeguards:
 - the app warns 30 days before and after the expiry date of each legal act the base relies on;
 - a text-fingerprint check lists which clauses changed in a new edition of the Rules and which base items depend on them.
 
-**Current scope:** one facility type (industrial building, fire-hazard class F5.1), 63 requirements in the demo set (73 in the base); 10 of the 27 questions of the official checklist are covered.
+**Current scope:** one facility type (industrial building, fire-hazard class F5.1), 69 requirements in the demo set (78 in the base), including items typical of food and fish processing sites (drying chambers, solid-fuel stoves, gas cylinders, freezing pipelines); 10 of the 27 questions of the official checklist are covered.
 
 ## Planned (not implemented)
 

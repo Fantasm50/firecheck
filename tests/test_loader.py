@@ -30,8 +30,8 @@ def problems_of(paths):
 
 def test_real_bases_load():
     bases = load_bases()
-    assert len(bases.items) == 63
-    assert len(bases.scores) == 63
+    assert len(bases.items) == 69
+    assert len(bases.scores) == 69
     assert sum(1 for i in bases.items if i.get("condition") is None) == 31
     assert len(bases.themes) == 8
     assert len(bases.scope) == 10

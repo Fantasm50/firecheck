@@ -45,7 +45,7 @@ def test_case_a(bases):
                                       "SYS-001", "SYS-002", "SYS-003"}
     assert not ids(checklist) & {"GEN-003", "GEN-004", "HEAT-002", "GEN-032", "GEN-035"}
     assert not any(i.startswith("HOT-") for i in ids(checklist))
-    assert checklist.hidden_count == 24
+    assert checklist.hidden_count == 30  # 24 + 6 food-site items (2026-11-21)
 
 
 def test_case_a_water_not_required(bases):

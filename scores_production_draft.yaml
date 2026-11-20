@@ -5,12 +5,14 @@
 # Scales 1-5 and their wording: fmea-scales-draft.md (sections 3-5).
 # Priority rule (accepted 2026-10-20, ordering made unique 2026-10-21): group by the matrix below, S = 5 always "high";
 #   inside a group: S = 5 first, then S*O desc, then S desc, then D desc, then id asc (project-spec.md, 4.5).
-# Items come from requirements_production.yaml, all 63 items with demo: true (57 + GEN-004, GEN-037, HOT-006 added 2026-10-21; SYS-001...003 added 2026-11-17).
+# Items come from requirements_production.yaml, all 69 items with demo: true (57 + GEN-004, GEN-037, HOT-006 added 2026-10-21; SYS-001...003 added 2026-11-17;
+#   GEN-025 and 5 food-site items added 2026-11-21).
 #
 # Origin of scores (field "from"):
 #   warehouse - copied unchanged from scores_warehouse_draft.yaml (46 items, shared GEN/TER/HEAT/HOT/INS/EXT/DOC ids).
 #               O there was set for a typical small warehouse: re-check for a workshop with experts.
-#   new       - scored for this file (14 items: GEN-008, GEN-017, GEN-021, 8 PROD items; GEN-004, GEN-037, HOT-006 on 2026-10-21; SYS-001...003 on 2026-11-17).
+#   new       - scored for this file (14 items: GEN-008, GEN-017, GEN-021, 8 PROD items; GEN-004, GEN-037, HOT-006 on 2026-10-21; SYS-001...003 on 2026-11-17;
+#               GEN-025, GEN-038, PROD-012, PROD-013, HEAT-003, HEAT-004 on 2026-11-21).
 # O is the base value for a typical small workshop; the specialist may raise it by 1
 #   if the violation is massive or permanent (rule in project-spec.md, 4.4).
 
@@ -19,7 +21,7 @@ meta:
   scale: "1-5"
   scored_by: draft_author
   status: draft
-  items_count: 63
+  items_count: 69
   excluded: {}
 
 # Priority group by S (rows) and O (columns 1..5). H = high, M = medium, L = low.
@@ -98,6 +100,13 @@ scores:
   - {id: GEN-007, s: 2, o: 1, d: 1, from: warehouse, why: "нет категорирования: от категории зависят другие нормы (огнетушители и др.)"}
   - {id: GEN-016, s: 2, o: 1, d: 1, from: warehouse, why: "не ведётся журнал эксплуатации СПЗ"}
   - {id: DOC-001, s: 2, o: 1, d: 2, from: warehouse, why: "не определено условие соответствия объекта"}
+  # --- food and fish processing sites (added 2026-11-21, draft like all others; food-industry-ppr.md) ---
+  - {id: PROD-012, s: 4, o: 3, d: 3, from: new, why: "сушильная камера без отключения обогрева при перегреве: пожар внутри камеры с сырьём; исправность автоматики видна только при проверке"}
+  - {id: HEAT-003, s: 3, o: 4, d: 2, from: new, why: "сажа в дымоходе — частая причина загорания; видно по акту или журналу очистки"}
+  - {id: HEAT-004, s: 3, o: 4, d: 1, from: new, why: "печь без присмотра, розжиг ЛВЖ, перекал — прямые источники зажигания; видно при обходе"}
+  - {id: GEN-025, s: 3, o: 3, d: 2, from: new, why: "выжигание жировых отложений в воздуховодах — открытый огонь в вентиляции; закрытые решётки и хранение в венткамерах заметны при осмотре"}
+  - {id: GEN-038, s: 4, o: 2, d: 1, from: new, why: "баллон в здании: при пожаре возможен взрыв и быстрое развитие; видно сразу"}
+  - {id: PROD-013, s: 3, o: 3, d: 3, from: new, why: "отогрев трубопровода открытым огнём — источник зажигания рядом с изоляцией; бывает эпизодически, при обходе не виден"}
   # --- required systems are absent (SYS-*, added 2026-11-17; same S logic as GEN-034, O fixed at 2 like other protection items) ---
   - {id: SYS-001, s: 5, o: 2, d: 3, from: new, why: "нет обязательной АПС: пожар не обнаружат вовремя, угроза жизни; отсутствие видно сразу, но обязательность — только по проекту и пост. № 1464"}
   - {id: SYS-002, s: 5, o: 2, d: 3, from: new, why: "нет обязательной СОУЭ: людей не оповестят, угроза жизни; обязательность — по пост. № 1464, прил. 5"}

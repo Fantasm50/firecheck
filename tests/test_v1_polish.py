@@ -38,7 +38,7 @@ def text_of(doc):
 def test_hidden_items_are_listed_with_condition(bases, case_a):
     _, checklist = case_a
     hidden = {i["id"]: i for i in checklist.hidden}
-    assert len(hidden) == checklist.hidden_count == 24
+    assert len(hidden) == checklist.hidden_count == 30
     assert not hidden.keys() & {i["id"] for i in checklist.items}
     assert hidden["HOT-001"]["condition"] == "проводятся огневые работы"
     assert all(i.get("condition") for i in checklist.hidden)  # every hidden item has a reason to show
@@ -97,3 +97,17 @@ def test_new_hints(bases):
     items = {i["id"]: i for i in bases.items}
     assert "проектной документации на здание нет" in items["GEN-018"]["note"]
     assert "других отопительных приборов и систем" in items["HEAT-001"]["note"]
+
+
+# ---------- food and fish processing sites (food-industry-ppr.md, 2026-11-21) ----------
+
+def test_food_site_items_follow_the_questionnaire(bases):
+    answers = {**default_answers(bases), **CASE_A, "has_drying_chambers": True, "has_solid_fuel_stoves": True,
+               "has_exhaust_ventilation": True, "uses_gas_cylinders": True, "has_freezing_pipelines": True}
+    ids = {i["id"] for i in build_checklist(bases, answers).items}
+    assert {"PROD-012", "HEAT-003", "HEAT-004", "GEN-025", "GEN-038", "PROD-013"} <= ids
+    plain = {i["id"] for i in build_checklist(bases, {**default_answers(bases), **CASE_A}).items}
+    assert not plain & {"PROD-012", "HEAT-003", "HEAT-004", "GEN-025", "GEN-038", "PROD-013"}
+    items = {i["id"]: i for i in bases.items}
+    assert items["HEAT-003"]["periodic"].startswith("печи — не реже 1 раза в 3 месяца")
+    assert "жировые отложения" in items["GEN-025"]["check"]
