@@ -30,11 +30,16 @@ def problems_of(paths):
 
 def test_real_bases_load():
     bases = load_bases()
-    assert len(bases.items) == 69
-    assert len(bases.scores) == 69
-    assert sum(1 for i in bases.items if i.get("condition") is None) == 31
-    assert len(bases.themes) == 8
-    assert len(bases.scope) == 10
+    assert len(bases.items) == 93          # 69 production + 24 warehouse-only (2026-11-21)
+    assert len(bases.scores) == 93
+    production = [i for i in bases.items if "production" in i["object_types"]]
+    warehouse = [i for i in bases.items if "warehouse" in i["object_types"]]
+    assert (len(production), len(warehouse)) == (89, 82)
+    gated = [i for i in production if (i.get("gate") or {}).get("production")]
+    assert len(gated) == 20  # storage items of a shop, only with "has_storage_rooms" (variant Б)
+    assert sum(1 for i in production if i.get("condition") is None and i not in gated) == 31
+    assert len(bases.themes) == 9
+    assert {t: len(q) for t, q in bases.scopes.items()} == {"production": 10, "warehouse": 11}
     assert bases.items[0]["id"] == "GEN-001"  # file order is kept
     assert {"many_people", "mass_people", "no_water_no_aupt"} <= bases.flags
     assert "03.02.2025" in bases.edition

@@ -127,8 +127,8 @@ questions:
   - id: Q525-17
     question: "Fire safety requirements for storage facilities"
     refs: ["ППР № 1479 п. 286-307"]
-    topic: storage           # TARGET for prototype (warehouse)
-    verified: false
+    topic: storage           # warehouse object type (2026-11-21)
+    verified: true   # checked against the DOCX text of the order 2026-11-21: "к объектам хранения", items 286-307
 
   - id: Q525-18
     question: "Fire safety requirements for construction, installation and restoration works"
@@ -194,4 +194,5 @@ questions:
 prototype_scope:
   # Q525-05 added: items 71 and 73 apply to the enterprise territory (see requirements_production.yaml)
   production: [Q525-01, Q525-02, Q525-03, Q525-04, Q525-05, Q525-06, Q525-12, Q525-19, Q525-21, Q525-22]
-  warehouse:  [Q525-01, Q525-02, Q525-03, Q525-04, Q525-06, Q525-17, Q525-19, Q525-21, Q525-22]
+  # warehouse (2026-11-21): Q525-05 for items 65, 71, 73; Q525-12 for item 130 (PROD-008 names warehouse buildings too)
+  warehouse:  [Q525-01, Q525-02, Q525-03, Q525-04, Q525-05, Q525-06, Q525-12, Q525-17, Q525-19, Q525-21, Q525-22]

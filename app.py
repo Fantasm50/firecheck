@@ -14,7 +14,8 @@ from datetime import date
 import streamlit as st
 
 from core.action_plan import STATUSES, clean_plan, overdue_ids, parse_due
-from core.checklist import AnswersError, build_checklist, by_theme, default_answers
+from core.checklist import (AnswersError, asked_flags, build_checklist, by_theme, default_answers, object_type,
+                            object_type_label)
 from core.loader import DataError, load_bases
 from core.plan_export import build_plan_xlsx
 from core.recheck import apply_recheck
@@ -145,9 +146,10 @@ def load_session_widget(bases):
 
 # ---------- screen 1: questionnaire (4.1) ----------
 
-# Demo scenario (demo-scenario.md): fictional mechanical shop, 43 items, 6 violations,
-# readiness index 86.0. Answer texts match the first words of the item "check" field.
+# Demo scenarios (demo-scenario.md). Answer texts match the first words of the item "check" field.
+# Production: fictional mechanical shop, 43 items, 6 violations, readiness index 86.0.
 DEMO_OBJECT = {
+    "object_type": "production",
     "name": "Механический цех (демо)",
     "category": "В3",
     "people_max": 60,
@@ -164,16 +166,37 @@ DEMO_VIOLATION_PREFIXES = (
     "Эвакуационные пути и выходы", "Нет изменений планировки", "При монтаже, ремонте",
     "Оборудованы пожарные щиты", "Место огневых работ", "Чердаки",
 )
+# Warehouse (2026-11-21): fictional storage of non-food goods with a ramp and aerosol packages.
+DEMO_WAREHOUSE = {
+    "object_type": "warehouse",
+    "name": "Склад непродовольственных товаров (демо)",
+    "category": "В3",
+    "people_max": 12,
+    "workplaces_per_floor": 6,
+    "has_aps": True,
+    "has_soue": True,
+    "has_outdoor_water": True,
+    "water_required": "no",  # fictional: the design documents do not require them
+    "aupt_required": "no",
+    "has_ramp": True,
+    "stores_flammable_packages": True,
+}
+DEMO_WAREHOUSE_VIOLATIONS = (
+    "В лестничных клетках нет кладовых", "В помещениях склада нет дежурного освещения",
+    "Баллоны с горючими газами, тара", "Грузы и материалы, разгруженные на рампу", "Каждый огнетушитель имеет",
+)
+DEMOS = {"production": (DEMO_OBJECT, DEMO_VIOLATION_PREFIXES), "warehouse": (DEMO_WAREHOUSE, DEMO_WAREHOUSE_VIOLATIONS)}
 
 
-def demo_fill(bases):
-    """Fill the questionnaire and the checklist with the demo scenario and show the result."""
+def demo_fill(bases, kind="production"):
+    """Fill the questionnaire and the checklist with a demo scenario and show the result."""
+    demo, violations = DEMOS[kind]
     answers = default_answers(bases)
-    answers.update(DEMO_OBJECT)
+    answers.update(demo)
     checklist = build_checklist(bases, answers)
     responses = {}
     for item in checklist.items:
-        answer = VIOLATION if item["check"].startswith(DEMO_VIOLATION_PREFIXES) else OK
+        answer = VIOLATION if item["check"].startswith(violations) else OK
         responses[item["id"]] = {"answer": answer}
     st.session_state.answers = answers
     st.session_state.checklist = checklist
@@ -192,19 +215,26 @@ def questionnaire_screen(bases):
     qn = bases.questionnaire
     saved = st.session_state.get("answers", {})
     st.title("Анкета объекта")
-    st.caption("Производственный объект: цех, мастерская.")
     show_validity_alerts(bases)
 
-    left, right = st.columns([1, 2])
+    left, middle, right = st.columns([2, 1, 2])
     if left.button("Демо: типовой механический цех", help="Заполнить анкету и чек-лист данными демо-сценария "
                    "(вымышленный объект, 43 пункта, 6 нарушений) и сразу показать результат"):
-        demo_fill(bases)
+        demo_fill(bases, "production")
+    if middle.button("Демо: склад", help="Вымышленный склад непродовольственных товаров: анкета, чек-лист "
+                     "и результат с нарушениями"):
+        demo_fill(bases, "warehouse")
     load_session_widget(bases)
 
     for key in ("name", *(n["id"] for n in qn["numbers"]), *(f["id"] for f in qn["flags"]),
                 *(c["id"] for c in qn["choices"])):
         keep(f"q_{key}", saved.get(key))
 
+    type_choice = next(c for c in qn["choices"] if c["id"] == "object_type")
+    keep("q_object_type", type_choice["default"])
+    kind = st.radio(type_choice["label"], type_choice["options"], horizontal=True, key="q_object_type",
+                    format_func=lambda v: type_choice["option_labels"][v],
+                    help="От типа зависят вопросы анкеты и пункты чек-листа")
     st.text_input("Название объекта (необязательно)", key="q_name")
     cols = st.columns(2)
     for col, number in zip(cols, qn["numbers"]):
@@ -213,6 +243,8 @@ def questionnaire_screen(bases):
 
     for choice in qn["choices"]:
         options = choice["options"]
+        if choice["id"] == "object_type":
+            continue
         if choice["id"] == "category":
             key = f"q_{choice['id']}"
             st.selectbox(choice["label"], options, placeholder="не выбрано", key=key,
@@ -222,8 +254,10 @@ def questionnaire_screen(bases):
             st.radio(choice["label"], options, horizontal=True, help=choice.get("hint"),
                      format_func=lambda v: CHOICE_LABELS.get(v, v), key=f"q_{choice['id']}")
 
+    # gated questions (storage rooms of a shop) appear right after their gate box is ticked
+    ticked = {f["id"]: st.session_state.get(f"q_{f['id']}") for f in qn["flags"]}
     sections = {}
-    for flag in qn["flags"]:
+    for flag in asked_flags(bases, kind, ticked):
         sections.setdefault(flag["section"], []).append(flag)
     for section, flags in sections.items():
         st.subheader(section)
@@ -232,8 +266,11 @@ def questionnaire_screen(bases):
 
     if st.button("Сформировать чек-лист", type="primary"):
         answers = default_answers(bases)
+        other_type_flags = {f["id"] for f in qn["flags"]} - {f["id"] for f in asked_flags(bases, kind, ticked)}
         for key in list(answers) + ["name"]:
             value = st.session_state.get(f"q_{key}")
+            if key in other_type_flags:
+                continue  # a box of another type, or behind an unticked gate, stays "no"
             if value is not None and value != "":
                 answers[key] = value
         try:
@@ -283,6 +320,7 @@ def fill_screen(bases):
 
     name = st.session_state.answers.get("name") or "Объект без названия"
     st.title(f"Чек-лист: {name}")
+    st.caption("Тип объекта: " + object_type_label(bases, checklist.object_type))
     answered = sum(1 for i in items if st.session_state.get(f"a_{i['id']}") is not None)
     st.progress(answered / len(items), text=f"Отвечено {answered} из {len(items)}")
     show_hidden(checklist)
@@ -348,6 +386,7 @@ def result_screen(bases):
 
     name = st.session_state.answers.get("name") or "Объект без названия"
     st.title(f"Результат самопроверки: {name}")
+    st.caption("Тип объекта: " + object_type_label(bases, checklist.object_type))
     show_validity_alerts(bases)
     show_progress(result)
     left, right = st.columns([1, 2])
@@ -409,7 +448,7 @@ def result_screen(bases):
     with st.expander("Покрытие вопросов проверочного листа (приказ МЧС № 525)"):
         st.dataframe([{"Вопрос": bases.questions[q]["id"].replace("Q525-", "№ "), "Пунктов в чек-листе": n,
                        "Статус": status} for q, n, status in result.coverage], hide_index=True)
-        st.caption(f"Остальные {len(bases.questions) - len(bases.scope)} вопросов листа в прототипе не проверяются.")
+        st.caption(f"Остальные {len(bases.questions) - len(result.coverage)} вопросов листа в прототипе не проверяются.")
 
     for warning in WARNINGS:
         st.caption("⚠️ " + warning)

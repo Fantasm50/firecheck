@@ -23,6 +23,32 @@ class Checklist:
     hidden_count: int    # demo items hidden by the questionnaire (shown in the report, 4.9.2)
     flags: set           # true flags, including derived ones
     hidden: list = field(default_factory=list)  # demo items hidden by the questionnaire, in file order
+    object_type: str = "production"             # type chosen in the questionnaire (core.loader.OBJECT_TYPES)
+    scope: list = None                          # q525 ids of the coverage table; None = the type's prototype_scope
+
+
+def object_type(answers):
+    """Object type of the answers; old answers without a type are a production object."""
+    return answers.get("object_type") or "production"
+
+
+def object_type_label(bases, kind):
+    """Human name of the object type from the questionnaire ("склад (здание или помещение для хранения)")."""
+    choice = next(c for c in bases.questionnaire["choices"] if c["id"] == "object_type")
+    return choice["option_labels"][kind]
+
+
+def gate_open(entry, kind, answers):
+    """True if the item or question has no gate for this type, or its gate flag is ticked."""
+    flag = (entry.get("gate") or {}).get(kind)
+    return flag is None or answers.get(flag) is True
+
+
+def asked_flags(bases, kind, answers=None):
+    """Flag questions asked for this object type, in questionnaire order.
+    With answers, gated questions are asked only when their gate flag is ticked."""
+    return [f for f in bases.questionnaire["flags"] if kind in (f.get("object_types") or [kind])
+            and (answers is None or gate_open(f, kind, answers))]
 
 
 def default_answers(bases):
@@ -60,7 +86,8 @@ def check_answers(bases, answers):
 
 def true_flags(bases, answers):
     """Set of flags that are true: the "yes" answers plus the derived flags (4.1)."""
-    flags = {f["id"] for f in bases.questionnaire["flags"] if answers.get(f["id"]) is True}
+    # flags not asked for this object type do not count (a box ticked before the type was changed)
+    flags = {f["id"] for f in asked_flags(bases, object_type(answers), answers) if answers.get(f["id"]) is True}
     people = answers["people_max"]
     workplaces = answers["workplaces_per_floor"]
     water_required = answers.get("water_required", "unknown")
@@ -79,16 +106,22 @@ def true_flags(bases, answers):
 
 
 def build_checklist(bases, answers):
-    """Select demo items whose applies_if has at least one true flag; items without condition always."""
+    """Select demo items of the object type whose applies_if has at least one true flag;
+    items without condition always. Items of other object types are not listed as hidden."""
     problems = check_answers(bases, answers)
     if problems:
         raise AnswersError(problems)
+    kind = object_type(answers)
     flags = true_flags(bases, answers)
-    items = [item for item in bases.items
-             if not item.get("applies_if") or flags & set(item["applies_if"])]
+    pool = [item for item in bases.items if kind in item["object_types"] and gate_open(item, kind, answers)]
+    items = [item for item in pool if not item.get("applies_if") or flags & set(item["applies_if"])]
     included = {item["id"] for item in items}
-    hidden = [item for item in bases.items if item["id"] not in included]
-    return Checklist(items=items, hidden_count=len(hidden), flags=flags, hidden=hidden)
+    hidden = [item for item in pool if item["id"] not in included]
+    # coverage table: the type's questions plus those of gated items in the pool (storage rooms of a shop)
+    extra = {item["q525"] for item in pool}
+    scope = [q for q in bases.questions if q in bases.scopes[kind] or q in extra]
+    return Checklist(items=items, hidden_count=len(hidden), flags=flags, hidden=hidden, object_type=kind,
+                     scope=scope)
 
 
 def by_theme(bases, items):

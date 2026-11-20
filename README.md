@@ -14,7 +14,7 @@ A person responsible for fire safety at an industrial site has to check dozens o
 
 ## What the prototype does
 
-1. **Facility questionnaire** (floor count, people, fire-hazard category, fire-protection systems, processes) selects only the requirements that apply to this building.
+1. **Facility questionnaire**: the facility type (industrial building or warehouse), people, fire-hazard category, fire-protection systems, processes or storage conditions. It selects only the requirements that apply to this building.
 2. **Checklist**: each item cites the exact clause of the Fire Regime Rules and is linked to a question of the official inspection checklist. The user answers *compliant / non-compliant / not applicable* (a comment is required for *not applicable*).
 3. **Prioritisation** of non-conformities with an adapted FMEA scheme: severity S, occurrence O and detection D on 1–5 scales; a priority group from an S × O matrix with a life-safety override (S = 5 is always high); RPN = S × O × D is computed in parallel for research comparison.
 4. **Result**: the number of *critical* violations (S = 5, threat to life) is shown above a readiness index, then the top five violations with clause references.
@@ -25,11 +25,15 @@ Additional safeguards:
 - the app warns 30 days before and after the expiry date of each legal act the base relies on;
 - a text-fingerprint check lists which clauses changed in a new edition of the Rules and which base items depend on them.
 
-**Current scope:** one facility type (industrial building, fire-hazard class F5.1), 69 requirements in the demo set (78 in the base), including items typical of food and fish processing sites (drying chambers, solid-fuel stoves, gas cylinders, freezing pipelines); 10 of the 27 questions of the official checklist are covered.
+**Corrective-action cycle** (implemented, no server needed): an action plan for each violation (action, owner, deadline, status, overdue warning), export to Excel, re-inspection of open violations with a "before → after" history. Everything is saved in a session file that stays with the user.
+
+**Current scope:** two facility types.
+- Industrial building (fire-hazard class F5.1): 69 requirements, including items typical of food and fish processing sites (drying chambers, solid-fuel stoves, gas cylinders, freezing pipelines); 10 of the 27 questions of the official checklist are covered.
+- Warehouse (F5.2, added 21.11.2026): 82 requirements, 59 of them shared with the industrial set and 23 from the storage section of the Rules (clauses 286–295, 299 on gas cylinders and others); 11 of the 27 questions are covered. An industrial building with storage rooms gets the storage requirements too (one question in its questionnaire).
 
 ## Planned (not implemented)
 
-Corrective-action tracking (action, owner, deadline, status, re-inspection with evidence), a calendar of mandatory periodic tasks, history of inspections. The order of these modules will be decided after interviews with practitioners.
+A calendar of mandatory periodic tasks, history of inspections, storage of data between sessions. The order of these modules will be decided after interviews with practitioners.
 
 ## Research component
 

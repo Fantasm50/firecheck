@@ -117,8 +117,12 @@ def _number_key(number):
 
 
 def read_base_items(path=None):
-    with open(path or DEFAULT_PATHS["requirements"], encoding="utf-8") as f:
-        return yaml.safe_load(f)["requirements"]
+    """Items of one requirements file, or of both bases (production and warehouse) by default."""
+    items = []
+    for one in [path] if path else [DEFAULT_PATHS["requirements"], DEFAULT_PATHS["warehouse"]]:
+        with open(one, encoding="utf-8") as f:
+            items += yaml.safe_load(f)["requirements"]
+    return items
 
 
 def make_lock(source_path, items, edition):

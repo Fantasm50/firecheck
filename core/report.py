@@ -15,6 +15,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
 from core.action_plan import due_text
+from core.checklist import object_type_label
 from core.scoring import NA, OK, UNKNOWN, VIOLATION
 from core.validity import validity_alerts
 
@@ -118,7 +119,7 @@ def build_report(bases, answers, checklist, result, responses, on_date=None, pla
     doc.add_heading("Отчёт о самопроверке пожарной безопасности", level=0)
     for label, value in [
         ("Объект", answers.get("name") or "без названия"),
-        ("Тип объекта", "производственный объект"),
+        ("Тип объекта", object_type_label(bases, checklist.object_type)),
         ("Дата самопроверки", on_date.strftime("%d.%m.%Y")),
         ("База норм", f"ППР № 1479, {bases.edition}"),
     ]:
@@ -250,7 +251,7 @@ def build_report(bases, answers, checklist, result, responses, on_date=None, pla
     rows = [[q.replace("Q525-", "№ "), "; ".join(bases.questions[q].get("refs", [])), n, status]
             for q, n, status in result.coverage]
     _table(doc, ["Вопрос", "Нормы вопроса", "Пунктов", "Статус"], rows, [1.8, 8.2, 1.8, 5.2])
-    rest = len(bases.questions) - len(bases.scope)
+    rest = len(bases.questions) - len(result.coverage)
     doc.add_paragraph(f"Остальные {rest} вопросов листа в прототипе не проверяются.").runs[0].font.size = Pt(10)
 
     # ---------- warnings ----------

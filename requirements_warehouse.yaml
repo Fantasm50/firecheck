@@ -1,91 +1,98 @@
-# Layer 1: checkable fire safety requirements for a WAREHOUSE object (prototype scope).
-# DRAFT v0, created 2026-10-20. ALL items have "verified: false" until the user re-checks them.
+# Layer 1: checkable fire safety requirements for a WAREHOUSE object (second object type, task 3.3).
+# Draft v0 created 2026-10-20; re-checked against the PPR text and put into the service 2026-11-21
+# (warehouse-ppr.md). The service reads this file together with requirements_production.yaml.
 #
 # SOURCE: Rules of fire safety regime (PPR), Government resolution No 1479 of 16.09.2020,
 #         consolidated edition of 03.02.2025 (ConsultantPlus, saved 06.02.2026),
-#         file sources/ppr-1479-red-2025-02-03.docx. Section XIV "Объекты хранения" (items 286-307)
-#         was read in the text; items 11, 16 (в, к), 40(1) read as well.
+#         file sources/ppr-1479-red-2025-02-03.docx. Section XIV "Объекты хранения" (items 286-307),
+#         items 16 (в, к), 34, 65 read in the text.
 # Wording of "check" is a short paraphrase of the cited item, written for a specialist's checklist.
-# "verified: false" means: paraphrased from the text by Claude, NOT yet re-checked word by word by the user.
+# "verified: true" = paraphrase compared with the text line by line (2026-11-21), the same level as
+#         the production base. Text fingerprints are kept in data/sources_lock.yaml (core/sources.py).
 #
 # IMPORTANT BEFORE USE:
 #   1. The edition above is valid only up to 06.02.2026. Check for newer amendments before use.
 #   2. PPR No 1479 is valid until 31.12.2026 inclusive (footnote of order No 525);
 #      a draft order of EMERCOM about new Rules (06.08.2026) is not confirmed: item numbers may change.
-#   3. s / o / d (FMEA scores) are empty on purpose: scales must be justified first.
-#   4. Common items are NOT copied: they are reused from requirements_production.yaml by id (see "reuse").
-#      Those items have their own "verified: true" there (checked 2026-10-10 against the same edition),
-#      but they were chosen for a production object: re-read "condition" of each one for a warehouse.
+#   3. s / o / d (FMEA scores) are drafts: scores_warehouse_draft.yaml.
+#   4. Common items are NOT copied: they are taken from requirements_production.yaml by id (see "reuse").
 #   5. Section XIV is mostly industry-specific (oil storage tanks, grain, timber, coal, waste landfills).
-#      Items 286-288, 290-294 are universal and form the core below (WH-001 .. WH-009).
-#      Items 289, 295, 299 are conditional packs; 296-298, 300-307 are NOT included (see "excluded").
+#      Items 286-288, 290-295 and 299 are included; 296-298, 300-307 are NOT (see "excluded").
 #   6. Item 293 forbids standby lighting in warehouse rooms, GEN-021 (item 32) allows it in general:
-#      for a warehouse the stricter item 293 applies (WH-007).
+#      for a warehouse the stricter item 293 applies (WH-007, WH-008), GEN-021 is not reused.
 #
-# Fields: same as requirements_production.yaml.
-#   pack - null for the core, "gas" / "workshop_storage" / "rail" for conditional packs
+# Fields: same as requirements_production.yaml, plus
+#   object_types - object types the item is checked for; default here: [warehouse]
+#   gate         - {object type: flag}: for that type the item is checked only when the flag is true.
+#                  Used for storage rooms of a production building (variant Б, 2026-11-21): the storage
+#                  items apply to a shop only if "has_storage_rooms" is ticked. Without the flag they are
+#                  not part of the shop checklist at all (not counted as "hidden by the questionnaire").
+#   pack         - null for the core, "gas" / "workshop_storage" / "rail" for conditional groups
 
 meta:
   source: "ППР, постановление Правительства РФ от 16.09.2020 № 1479"
   edition: "ред. от 03.02.2025 (пост. № 90, в силу с 01.09.2025), сводный текст КонсультантПлюс от 06.02.2026"
   object_type: warehouse
   q525_main: Q525-17          # ППР п. 286-307
-  questions: [Q525-01, Q525-02, Q525-03, Q525-04, Q525-06, Q525-17, Q525-19, Q525-21, Q525-22]
-  items_new: 20               # 9 core + 2 general (16 к, 16 в) + 9 conditional
-  all_verified: false
 
-# Items reused from requirements_production.yaml (same text of PPR, general sections).
+# Items of requirements_production.yaml that are checked for a warehouse too (same text of PPR).
+# core/loader.py adds "warehouse" to their object_types. Checked by the loader: every id exists and is a demo item.
 reuse:
-  general: [GEN-001, GEN-002, GEN-003, GEN-006, GEN-007, GEN-009, GEN-012, GEN-013, GEN-015, GEN-016,
-            GEN-018, GEN-019, GEN-020, GEN-021, GEN-022, GEN-023, GEN-024, GEN-026, GEN-027,
-            GEN-029, GEN-031, GEN-032, GEN-033, GEN-034, GEN-035, GEN-036]
+  general: [GEN-001, GEN-002, GEN-003, GEN-004, GEN-006, GEN-007, GEN-008, GEN-009, GEN-012, GEN-013,
+            GEN-015, GEN-016, GEN-018, GEN-019, GEN-020, GEN-037, GEN-022, GEN-023, GEN-024, GEN-025,
+            GEN-026, GEN-027, GEN-029, GEN-031, GEN-032, GEN-033, GEN-036, GEN-034, GEN-035, GEN-038]
   territory: [TER-001, TER-002]
-  heating: [HEAT-001, HEAT-002]
-  hot_works: [HOT-001, HOT-002, HOT-003, HOT-004, HOT-005]
+  heating: [HEAT-001, HEAT-002, HEAT-003, HEAT-004]
+  hot_works: [HOT-001, HOT-002, HOT-003, HOT-004, HOT-005, HOT-006]
   instructions: [INS-001, INS-002]
   extinguishers: [EXT-001, EXT-002, EXT-003, EXT-004, EXT-005]
   documents: [DOC-001, DOC-002, DOC-003, DOC-004, DOC-005]
+  systems: [SYS-001, SYS-002, SYS-003]
+  production_section: [PROD-008]   # item 130 names "производственные и складские здания" on the enterprise territory
+  # GEN-014 (item 16 л) is marked object_types: [warehouse] in requirements_production.yaml itself
   not_reused:
-    GEN-004: "практические тренировки: только при 50+ людях"
-    GEN-005: "мелкая формальность"
-    GEN-008: "огнезащита конструкций: добавить позже, если применяется"
+    GEN-005: "перечень помещений у приборов: мелкая формальность, и в базе цеха не в демо"
     GEN-010: "требует вскрытия конструкций"
-    GEN-014: "антресоли: редкий случай (но п. 16 л прямо про складские помещения, можно вернуть)"
     GEN-017: "ветошь и спецодежда: для производства"
-    GEN-025: "дублирует GEN-027"
+    GEN-021: "заменён более строгим п. 293 (WH-007, WH-008)"
     GEN-028: "канализация и ЛВЖ: отраслевой случай"
     GEN-030: "дублирует TER-001"
-    PROD-all: "пункты 121-135 относятся к производственным объектам"
+    PROD-other: "пункты 121-147 относятся к производственным объектам"
     EXT-006: "низкий приоритет"
 
 requirements:
   # ---------- Section XIV, core (universal items of warehouse storage) ----------
-  - {id: WH-001, ppr: "286", q525: Q525-17, pack: null, topic: storage_rules, condition: null, amended: "пост. № 90 от 03.02.2025 (абз. 2)", check: "Вещества и материалы хранятся с учётом их пожароопасных свойств (окисление, самонагревание, воспламенение при попадании влаги или контакте с воздухом); каучук и материалы, получаемые вулканизацией каучука, не хранятся в одной пожарной секции с какими-либо другими материалами и товарами", verified: false, demo: true}
-  - {id: WH-002, ppr: "287", q525: Q525-17, pack: null, topic: storage_rules, condition: "хранятся баллоны с горючими газами, тара с ЛВЖ и ГЖ или аэрозольные упаковки", check: "Эти баллоны, тара и аэрозольные упаковки защищены от солнечного и иного теплового воздействия; на открытых площадках и под навесами аэрозольные упаковки хранятся только в контейнерах из негорючих материалов", verified: false, demo: true}
-  - {id: WH-003, ppr: "288", q525: Q525-17, pack: null, topic: lighting, condition: "есть светильники с лампами накаливания", check: "Расстояние от светильников с лампами накаливания до хранящихся товаров не менее 0,5 м", verified: false, demo: true}
-  - {id: WH-004, ppr: "290", q525: Q525-17, pack: null, topic: vehicles, condition: null, check: "Нет стоянки и ремонта погрузочно-разгрузочных и транспортных средств в складских помещениях и на дебаркадерах", verified: false, demo: true}
-  - {id: WH-005, ppr: "291", q525: Q525-17, pack: null, topic: ramp, condition: "есть рампа (платформа)", check: "Грузы и материалы, разгруженные на рампу (платформу), к концу рабочего дня убраны", verified: false, demo: true}
-  - {id: WH-006, ppr: "292", q525: Q525-17, pack: null, topic: handling, condition: "выполняются вскрытие тары, проверка исправности, мелкий ремонт, расфасовка или приготовление рабочих смесей пожароопасных жидкостей", amended: "пост. № 90 от 03.02.2025", check: "Эти операции выполняются в помещениях, изолированных от мест хранения пожароопасных и пожаровзрывоопасных веществ и материалов", verified: false, demo: true}
-  - {id: WH-007, ppr: "293 абз. 1", q525: Q525-17, pack: null, topic: electrical, condition: null, check: "В помещениях складов нет дежурного освещения, не используются газовые плиты и электронагревательные приборы", note: "строже общего правила (GEN-021, п. 32), где дежурное освещение допускается; прочитать в связке с пунктом 32", verified: false, demo: true}
-  - {id: WH-008, ppr: "293 абз. 2", q525: Q525-17, pack: null, topic: electrical, condition: null, check: "Оборудование склада по окончании рабочего дня обесточивается; аппараты отключения электроснабжения склада расположены вне складского помещения на стене из негорючих материалов или отдельно стоящей опоре", verified: false, demo: true}
-  - {id: WH-009, ppr: "294", q525: Q525-17, pack: null, topic: open_storage, condition: "горючие материалы хранятся на открытой площадке (кроме негорючих материалов в горючей упаковке)", amended: "пост. № 90 от 03.02.2025", check: "Площадь одной секции (штабеля) не более 300 кв. м; противопожарные расстояния между штабелями не менее 8 м", verified: false, demo: true}
+  - {id: WH-001, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "286", q525: Q525-17, pack: null, topic: storage, condition: null, amended: "пост. № 90 от 03.02.2025", check: "Вещества и материалы хранятся с учётом их пожароопасных свойств (окисление, самонагревание, воспламенение при попадании влаги или контакте с воздухом); каучук и материалы, получаемые вулканизацией каучука, не хранятся в одной пожарной секции с какими-либо другими материалами и товарами", verified: true, demo: true}
+  - {id: WH-002, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "287", q525: Q525-17, pack: null, topic: storage, condition: "хранятся баллоны с горючими газами, тара с ЛВЖ и ГЖ или аэрозольные упаковки", applies_if: [stores_flammable_packages, stores_gas_cylinders], check: "Баллоны с горючими газами, тара с ЛВЖ и ГЖ и аэрозольные упаковки защищены от солнечного и иного теплового воздействия; на открытых площадках и под навесами аэрозольные упаковки хранятся только в контейнерах из негорючих материалов", verified: true, demo: true}
+  - {id: WH-003, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "288", q525: Q525-17, pack: null, topic: storage, condition: "есть светильники с лампами накаливания", applies_if: [has_incandescent_lamps], check: "Расстояние от светильников с лампами накаливания до хранящихся товаров не менее 0,5 м", verified: true, demo: true}
+  - {id: WH-004, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "290", q525: Q525-17, pack: null, topic: vehicles, condition: null, check: "Нет стоянки и ремонта погрузочно-разгрузочных и транспортных средств в складских помещениях и на дебаркадерах", verified: true, demo: true}
+  - {id: WH-005, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "291", q525: Q525-17, pack: null, topic: storage, condition: "есть рампа (платформа)", applies_if: [has_ramp], check: "Грузы и материалы, разгруженные на рампу (платформу), к концу рабочего дня убраны", verified: true, demo: true}
+  - {id: WH-006, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "292", q525: Q525-17, pack: null, topic: handling, condition: "вскрывают тару, проверяют и ремонтируют, расфасовывают продукцию или готовят рабочие смеси пожароопасных жидкостей", applies_if: [does_repacking], amended: "пост. № 90 от 03.02.2025", check: "Вскрытие тары, проверка исправности и мелкий ремонт, расфасовка продукции, приготовление рабочих смесей пожароопасных жидкостей выполняются в помещениях, изолированных от мест хранения пожароопасных и пожаровзрывоопасных веществ и материалов", verified: true, demo: true}
+  - {id: WH-007, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "293 абз. 1", q525: Q525-17, pack: null, topic: electrical, condition: null, check: "В помещениях склада нет дежурного освещения, не используются газовые плиты и электронагревательные приборы", note: "Строже общего правила п. 32, где дежурное освещение допускается: для склада действует п. 293", verified: true, demo: true}
+  - {id: WH-008, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "293 абз. 2", q525: Q525-17, pack: null, topic: electrical, condition: null, check: "Оборудование склада по окончании рабочего дня обесточивается; аппараты отключения электроснабжения склада расположены вне складского помещения на стене из негорючих материалов или на отдельно стоящей опоре", verified: true, demo: true}
+  - {id: WH-009, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "294", q525: Q525-17, pack: null, topic: open_storage, condition: "горючие материалы хранятся на открытой площадке (кроме негорючих материалов в горючей упаковке)", applies_if: [has_open_storage], amended: "пост. № 90 от 03.02.2025", check: "На открытой площадке площадь одной секции (штабеля) горючих материалов не более 300 кв. м, противопожарные расстояния между штабелями не менее 8 м", verified: true, demo: true}
 
-  # ---------- Other general items relevant for storage (outside section XIV) ----------
-  - {id: WH-010, ppr: "16 к", q525: Q525-04, pack: null, topic: storage_rules, condition: null, amended: "в ред. пост. № 1885 от 24.10.2022", check: "В лестничных клетках нет кладовых и подсобных помещений; под лестничными маршами и площадками не хранятся вещи, мебель, оборудование и другие предметы из горючих материалов", verified: false, demo: true}
-  - {id: WH-011, ppr: "16 в", q525: Q525-04, pack: null, topic: storage_rules, condition: "есть лифтовые холлы", amended: "пост. № 90 от 03.02.2025", check: "В лифтовых холлах нет кладовых и нестационарных торговых объектов, не хранятся и не размещаются горючие материалы", verified: false, demo: false, defer_reason: "для склада редкая ситуация (лифтовые холлы), условный пункт"}
+  # ---------- Other general items naming storage (outside section XIV) ----------
+  - {id: WH-010, ppr: "16 к", q525: Q525-04, pack: null, topic: storage_rules, condition: null, amended: "пост. № 1885 от 24.10.2022", check: "В лестничных клетках нет кладовых и других подсобных помещений; под лестничными маршами и площадками не хранятся вещи, мебель, оборудование и другие предметы из горючих материалов", verified: true, demo: true}
+  - {id: WH-011, ppr: "16 в", q525: Q525-04, pack: null, topic: storage_rules, condition: "есть лифтовые холлы", applies_if: [has_lift_halls], amended: "пост. № 90 от 03.02.2025", check: "В лифтовых холлах нет кладовых и нестационарных торговых объектов, не хранятся и не размещаются горючие материалы", verified: true, demo: true}
+  - {id: WH-012, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "34", q525: Q525-04, pack: null, topic: open_storage, condition: "горючие материалы хранятся на открытой площадке", applies_if: [has_open_storage], check: "Над открытыми складами (штабелями) горючих веществ, материалов и изделий, а также над кровлями и навесами из горючих материалов нет воздушных линий электропередачи, в том числе временных и проложенных кабелем", verified: true, demo: true}
+  - {id: WH-013, ppr: "65", q525: Q525-05, pack: null, topic: territory, condition: null, check: "Противопожарные расстояния между зданиями и сооружениями не заняты складированными материалами, тарой, оборудованием, отходами, временными постройками; в них не разводят костры и не сжигают отходы и тару", verified: true, demo: true}
 
-  # ---------- Conditional pack: gas cylinders stored in a warehouse (item 299, 40(1)) ----------
-  - {id: WH-G01, ppr: "299 а, б", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с газом", check: "Окна помещений с баллонами закрашены белой краской или оборудованы солнцезащитными устройствами из негорючих материалов; сооружения на открытых площадках, защищающие баллоны от осадков и солнца, выполнены из негорючих материалов", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G02, ppr: "299 в", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", check: "Баллоны с горючим газом хранятся отдельно от баллонов с кислородом, сжатым воздухом, хлором, фтором и другими окислителями, а также от баллонов с токсичным газом", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G03, ppr: "299 и", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", check: "Баллоны с башмаками хранятся вертикально в гнёздах, клетях или других устройствах, исключающих падение; без башмаков — горизонтально на рамах или стеллажах, высота штабеля не более 1,5 м, клапаны закрыты защитными колпаками и обращены в одну сторону", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G04, ppr: "299 к, л", q525: Q525-17, pack: gas, topic: gas_storage, condition: "склад с горючим газом", check: "В помещениях склада с горючим газом нет хранения других веществ, материалов и оборудования; помещения обеспечены естественной вентиляцией", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G05, ppr: "299 е", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом в помещении", check: "В помещениях установлены газоанализаторы для контроля взрывоопасных концентраций; при их отсутствии руководитель установил порядок отбора и контроля проб газовоздушной среды", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G06, ppr: "299 ж", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с газом", check: "Баллоны с обнаруженной утечкой газа убираются из помещения склада в безопасное место", verified: false, demo: false, defer_reason: "условный пакет: склад баллонов"}
-  - {id: WH-G07, ppr: "40(1)", q525: Q525-04, pack: gas, topic: gas_storage, condition: "используются газовые баллоны (кроме одного баллона до 5 л у газовой плиты заводского изготовления)", check: "Баллоны расположены вне зданий (кроме складских зданий для их хранения) в шкафах или под кожухами из негорючих материалов на видных местах у глухого простенка стены не менее чем в 5 м от входа в здание и на цокольные и подвальные этажи; пристройки и шкафы запираются, имеют жалюзи и надпись «Огнеопасно. Газ»", verified: false, demo: false, defer_reason: "условный пакет: баллоны"}
+  # ---------- Conditional pack: gas cylinders stored in a warehouse (item 299) ----------
+  - {id: WH-G01, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 а, б", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с газом", applies_if: [stores_gas_cylinders, stores_oxygen_cylinders], check: "Окна помещений с баллонами закрашены белой краской или оборудованы солнцезащитными устройствами из негорючих материалов; сооружения на открытых площадках, защищающие баллоны от осадков и солнца, выполнены из негорючих материалов", verified: true, demo: true}
+  - {id: WH-G02, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 в", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", applies_if: [stores_gas_cylinders], check: "Баллоны с горючим газом хранятся отдельно от баллонов с кислородом, сжатым воздухом, хлором, фтором и другими окислителями, а также от баллонов с токсичным газом", verified: true, demo: true}
+  - {id: WH-G08, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 г", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с газом", applies_if: [stores_gas_cylinders, stores_oxygen_cylinders], check: "Групповые баллонные установки размещены у глухих (без проёмов) наружных стен; шкафы и будки для баллонов из негорючих материалов, с естественной вентиляцией, исключающей образование взрывоопасных смесей", verified: true, demo: true}
+  - {id: WH-G09, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 д", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с кислородом", applies_if: [stores_oxygen_cylinders], check: "На баллоны с кислородом не попадают масла (жиры), арматура баллонов не соприкасается с промасленными материалами; при перекантовке вручную за клапаны не берутся", verified: true, demo: true}
+  - {id: WH-G05, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 е", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", applies_if: [stores_gas_cylinders], check: "В помещениях установлены газоанализаторы для контроля взрывоопасных концентраций; при их отсутствии руководитель установил порядок отбора и контроля проб газовоздушной среды", verified: true, demo: true}
+  - {id: WH-G06, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 ж", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с газом", applies_if: [stores_gas_cylinders, stores_oxygen_cylinders], check: "Баллоны с обнаруженной утечкой газа убираются из помещения склада в безопасное место", verified: true, demo: true}
+  - {id: WH-G10, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 з", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", applies_if: [stores_gas_cylinders], check: "На склад с баллонами горючего газа не допускаются люди в обуви, подбитой металлическими гвоздями или подковами", verified: true, demo: true}
+  - {id: WH-G03, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 и", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", applies_if: [stores_gas_cylinders], check: "Баллоны с башмаками хранятся вертикально в гнёздах, клетях или других устройствах, исключающих падение; без башмаков — горизонтально на рамах или стеллажах, высота штабеля не более 1,5 м, клапаны закрыты предохранительными колпаками и обращены в одну сторону", verified: true, demo: true}
+  - {id: WH-G04, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "299 к, л", q525: Q525-17, pack: gas, topic: gas_storage, condition: "хранятся баллоны с горючим газом", applies_if: [stores_gas_cylinders], check: "В помещениях склада с горючим газом не хранятся другие вещества, материалы и оборудование; помещения обеспечены естественной вентиляцией", verified: true, demo: true}
+  # WH-G07 (item 40(1)) removed 2026-11-21: duplicated GEN-038 of the production base, which is reused instead.
 
-  # ---------- Conditional packs: workshop storage and rail ----------
-  - {id: WH-W01, ppr: "289", q525: Q525-17, pack: workshop_storage, topic: storage_rules, condition: "есть цеховые кладовые ЛВЖ и ГЖ", check: "ЛВЖ и ГЖ хранятся в отдельных от других материалов шкафах из негорючих материалов; количество не превышает установленные на предприятии нормы; на рабочих местах не более сменной потребности", verified: false, demo: false, defer_reason: "для производственных кладовых, в пакет «производство»"}
-  - {id: WH-R01, ppr: "295", q525: Q525-17, pack: rail, topic: vehicles, condition: "есть складские помещения категорий А, Б и В1-В4 и железнодорожные пути", check: "Нет въезда локомотивов в складские помещения категорий А, Б и В1-В4", verified: false, demo: false, defer_reason: "редкий случай для МСП"}
+  # ---------- Conditional packs: rail and workshop storage ----------
+  - {id: WH-R01, object_types: [warehouse, production], gate: {production: has_storage_rooms}, ppr: "295", q525: Q525-17, pack: rail, topic: vehicles, condition: "к складу подходят железнодорожные пути (склад категории А, Б или В1–В4)", applies_if: [has_rail_tracks], check: "Локомотивы не въезжают в складские помещения категорий А, Б и В1–В4", verified: true, demo: true}
+  - {id: WH-W01, ppr: "289", q525: Q525-17, pack: workshop_storage, topic: storage, condition: "есть цеховые кладовые ЛВЖ и ГЖ", check: "ЛВЖ и ГЖ хранятся в отдельных от других материалов шкафах из негорючих материалов; количество не превышает установленные на предприятии нормы; на рабочих местах не более сменной потребности", verified: true, demo: false, defer_reason: "по смыслу пункт для цеха: перенести в базу производства (warehouse-ppr.md §4)"}
 
 # Section XIV items NOT included (industry-specific); add as separate packs only if a pilot needs them.
 excluded:

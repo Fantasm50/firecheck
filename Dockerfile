@@ -17,7 +17,7 @@ COPY core/ core/
 # questionnaire, themes and PPR text fingerprints (core/loader.py reads data/)
 COPY data/ data/
 COPY checklist_525.yaml requirements_production.yaml \
-     requirements_warehouse.yaml scores_production_draft.yaml ./
+     requirements_warehouse.yaml scores_production_draft.yaml scores_warehouse_draft.yaml ./
 # Streamlit settings: no usage statistics, minimal toolbar
 COPY .streamlit/ .streamlit/
 

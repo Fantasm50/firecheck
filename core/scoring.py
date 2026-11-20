@@ -128,11 +128,12 @@ def readiness_index(items, responses):
     return (Decimal(ok) * 100 / Decimal(ok + bad)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
 
 
-def coverage(bases, items, responses):
-    """Status of each question of order No 525 in scope; statuses are checked strictly in this order (4.6)."""
-    in_base = {item["q525"] for item in bases.items}
+def coverage(bases, items, responses, kind="production", scope=None):
+    """Status of each question of order No 525 in scope (default: the object type's prototype_scope);
+    statuses are checked strictly in this order (4.6)."""
+    in_base = {item["q525"] for item in bases.items if kind in item["object_types"]}
     rows = []
-    for q_id in bases.scope:
+    for q_id in scope or bases.scopes[kind]:
         answers = [responses[i["id"]]["answer"] for i in items if i["q525"] == q_id]
         if q_id not in in_base:
             status = NO_ITEMS_IN_BASE
@@ -174,7 +175,7 @@ def evaluate(bases, checklist, responses):
         group_counts={g: sum(1 for v in violations if v.group == g) for g in GROUP_RANK},
         na_unconditional=[i["id"] for i in items
                           if not i.get("applies_if") and responses[i["id"]]["answer"] == NA],
-        coverage=coverage(bases, items, responses),
+        coverage=coverage(bases, items, responses, checklist.object_type, checklist.scope),
         cells=cells,
         hidden_count=checklist.hidden_count,
     )

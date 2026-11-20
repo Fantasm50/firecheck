@@ -13,6 +13,8 @@ themes:
     topics: [electrical, heating]
   - name: "Технологический процесс"
     topics: [process, hazardous_materials, protection_devices, cleaning, oily_rags]
+  - name: "Хранение"
+    topics: [storage, handling, vehicles, open_storage, gas_storage]
   - name: "Огневые работы"
     topics: [hot_works]
   - name: "Содержание территории и помещений"

@@ -1,6 +1,9 @@
-# Questionnaire of the production object. Source: project-spec.md, 4.1 and 4.9.1.
-# The flag ids are used in "applies_if" of requirements_production.yaml.
-# core/loader.py checks that every flag in applies_if is listed here (in "flags" or "derived").
+# Questionnaire of the object. Source: project-spec.md, 4.1 and 4.9.1.
+# The flag ids are used in "applies_if" of requirements_production.yaml and requirements_warehouse.yaml.
+# core/loader.py checks that every flag in applies_if is listed here (in "flags" or "derived"),
+# that it is asked for every object type of the item, and that every asked flag is used.
+# object_types - object types the question is asked for (default: all types, see choice "object_type").
+# gate - {object type: flag}: for that type the question is asked only when the flag is ticked.
 
 # Required numbers (integers, >= 0)
 numbers:
@@ -21,23 +24,36 @@ flags:
   - {section: "Системы противопожарной защиты", id: has_external_stairs, label: "Есть наружные пожарные или эвакуационные лестницы, ограждения кровли"}
   - {section: "Системы противопожарной защиты", id: has_fire_retardant, label: "Строительные конструкции обработаны огнезащитой"}
   - {section: "Системы противопожарной защиты", id: systems_over_life, label: "Системы противопожарной защиты работают сверх срока службы или нет данных изготовителя"}
+  # storage (warehouse-ppr.md, added 2026-11-21). For a production object these questions are asked only
+  # after "has_storage_rooms" is ticked (gate), the same as the storage items of requirements_warehouse.yaml.
+  - {section: "Хранение", id: has_storage_rooms, object_types: [production], label: "Есть складские помещения или площадки хранения (сырьё, продукция, материалы)", hint: "Тогда в чек-лист добавятся требования раздела XIV ППР «Объекты хранения»"}
+  - {section: "Хранение", id: stores_flammable_packages, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Хранятся тара с ЛВЖ и ГЖ или аэрозольные упаковки", hint: "Краски, растворители, масла, аэрозольные баллончики"}
+  - {section: "Хранение", id: stores_gas_cylinders, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Хранятся баллоны с горючим газом", hint: "Пропан, ацетилен и др."}
+  - {section: "Хранение", id: stores_oxygen_cylinders, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Хранятся баллоны с кислородом"}
+  - {section: "Хранение", id: has_open_storage, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Горючие материалы хранятся на открытой площадке", hint: "Не считая негорючих материалов в горючей упаковке"}
+  - {section: "Хранение", id: has_ramp, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Есть рампа (платформа) для погрузки и разгрузки"}
+  - {section: "Хранение", id: does_repacking, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "На складе вскрывают тару, ремонтируют, расфасовывают продукцию или готовят смеси горючих жидкостей"}
+  - {section: "Хранение", id: has_incandescent_lamps, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "Есть светильники с лампами накаливания"}
+  - {section: "Хранение", id: has_mezzanines, object_types: [warehouse], label: "В складских помещениях есть антресоли, конторки или встроенные помещения для рабочих мест"}
+  - {section: "Хранение", id: has_lift_halls, object_types: [warehouse], label: "Есть лифтовые холлы"}
+  - {section: "Хранение", id: has_rail_tracks, object_types: [warehouse, production], gate: {production: has_storage_rooms}, label: "К складу подходят железнодорожные пути"}
   # technology and heating
-  - {section: "Технология и отопление", id: uses_hazardous_substances, label: "Применяются пожаро- и пожаровзрывоопасные вещества"}
-  - {section: "Технология и отопление", id: uses_oils_paints, label: "Работа с маслами, лаками, красками, ЛВЖ и ГЖ"}
-  - {section: "Технология и отопление", id: has_exhaust_deposits, label: "Есть вытяжные устройства, аппараты или трубопроводы с пожароопасными отложениями"}
-  - {section: "Технология и отопление", id: has_dust_collectors, label: "Есть пылесборные камеры или циклоны"}
-  - {section: "Технология и отопление", id: has_ignition_protection, label: "На оборудовании есть искрогасители, молниезащита или защита от статического электричества"}
-  - {section: "Технология и отопление", id: has_flame_arresters, label: "Есть огнепреградители"}
+  - {section: "Технология и отопление", id: uses_hazardous_substances, label: "Применяются пожаро- и пожаровзрывоопасные вещества", object_types: [production]}
+  - {section: "Технология и отопление", id: uses_oils_paints, label: "Работа с маслами, лаками, красками, ЛВЖ и ГЖ", object_types: [production]}
+  - {section: "Технология и отопление", id: has_exhaust_deposits, label: "Есть вытяжные устройства, аппараты или трубопроводы с пожароопасными отложениями", object_types: [production]}
+  - {section: "Технология и отопление", id: has_dust_collectors, label: "Есть пылесборные камеры или циклоны", object_types: [production]}
+  - {section: "Технология и отопление", id: has_ignition_protection, label: "На оборудовании есть искрогасители, молниезащита или защита от статического электричества", object_types: [production]}
+  - {section: "Технология и отопление", id: has_flame_arresters, label: "Есть огнепреградители", object_types: [production]}
   - {section: "Технология и отопление", id: has_heating_units, label: "Есть печи, котельные или калориферы"}
   - {section: "Технология и отопление", id: has_boiler, label: "Есть котельная или теплопроизводящая установка"}
   - {section: "Технология и отопление", id: does_hot_work, label: "Проводятся огневые работы"}
   - {section: "Технология и отопление", id: hot_work_on_equipment, label: "Огневые работы проводятся на технологическом оборудовании"}
   # common on food and fish processing sites (food-industry-ppr.md, added 2026-11-21)
-  - {section: "Технология и отопление", id: has_drying_chambers, label: "Есть сушильные камеры или шкафы для сырья или полуфабрикатов", hint: "Например, для вяления и сушки рыбы, сухарей"}
+  - {section: "Технология и отопление", id: has_drying_chambers, label: "Есть сушильные камеры или шкафы для сырья или полуфабрикатов", hint: "Например, для вяления и сушки рыбы, сухарей", object_types: [production]}
   - {section: "Технология и отопление", id: has_solid_fuel_stoves, label: "Есть печи или кухонные плиты на твёрдом топливе", hint: "Дрова, уголь; в том числе печи непрерывной топки"}
   - {section: "Технология и отопление", id: has_exhaust_ventilation, label: "Есть вытяжная вентиляция над оборудованием или вентиляционные камеры"}
-  - {section: "Технология и отопление", id: uses_gas_cylinders, label: "Используются газовые баллоны"}
-  - {section: "Технология и отопление", id: has_freezing_pipelines, label: "Есть трубопроводы, в которых вода или продукт могут замёрзнуть или застыть"}
+  - {section: "Технология и отопление", id: uses_gas_cylinders, label: "Используются газовые баллоны", hint: "Для работы: плиты, горелки, отопление"}
+  - {section: "Технология и отопление", id: has_freezing_pipelines, label: "Есть трубопроводы, в которых вода или продукт могут замёрзнуть или застыть", object_types: [production]}
   # documents
   - {section: "Документы", id: has_design_docs, label: "Есть проектная документация"}
   - {section: "Документы", id: uses_risk_calc, label: "Соответствие обосновано расчётом пожарного риска, исследованиями или испытаниями"}
@@ -46,6 +62,11 @@ flags:
 
 # Questions with a fixed set of answers
 choices:
+  - id: object_type
+    label: "Тип объекта"
+    options: ["production", "warehouse"]
+    option_labels: {production: "производственный объект (цех, мастерская)", warehouse: "склад (здание или помещение для хранения)"}
+    default: "production"
   - id: water_required
     label: "Обязано ли здание по нормам иметь внутренний водопровод или АУПТ"
     hint: "Смотрите проектную документацию"
