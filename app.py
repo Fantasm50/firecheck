@@ -429,9 +429,9 @@ def plan_section(result):
         rows, key=f"plan_{st.session_state.get('plan_rev', 0)}", hide_index=True, num_rows="fixed",
         disabled=["№", "Нарушение", "Приоритет"],
         column_config={
-            "№": st.column_config.NumberColumn(width="small"),
-            "Нарушение": st.column_config.TextColumn(width="large"),
-            "Мероприятие": st.column_config.TextColumn(help="Что сделать, чтобы устранить нарушение"),
+            "№": st.column_config.NumberColumn(width=40),
+            "Нарушение": st.column_config.TextColumn(width="medium"),
+            "Мероприятие": st.column_config.TextColumn(width="medium", help="Что сделать, чтобы устранить нарушение"),
             "Ответственный": st.column_config.TextColumn(help="Должность или ФИО"),
             "Срок": st.column_config.DateColumn(format="DD.MM.YYYY"),
             "Статус": st.column_config.SelectboxColumn(options=list(STATUSES.values()), required=True),
