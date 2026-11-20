@@ -12,7 +12,8 @@ from decimal import ROUND_HALF_UP, Decimal
 OK = "ok"                # «соответствует»
 VIOLATION = "violation"  # «не соответствует»
 NA = "na"                # «не применимо»
-ANSWERS = {OK, VIOLATION, NA}
+UNKNOWN = "unknown"      # «не знаю, уточнить»: not rated, listed separately (4.6, added 2026-11-21)
+ANSWERS = {OK, VIOLATION, NA, UNKNOWN}
 
 GROUP_RANK = {"H": 0, "M": 1, "L": 2}
 CRITICAL_S = 5  # S = 5 is "threat to life" (fmea-scales-draft.md); such violations are critical (4.6)
@@ -22,6 +23,7 @@ NO_ITEMS_IN_BASE = "нет пунктов в базе"
 NOT_RELEVANT = "к объекту не относится (по анкете)"
 HAS_VIOLATIONS = "есть нарушения"
 ALL_NA = "все пункты не применимы"
+HAS_UNKNOWN = "есть пункты, требующие уточнения"
 ALL_OK = "все пункты соответствуют"
 
 
@@ -52,6 +54,7 @@ class Violation:
 class Result:
     index: Decimal | None   # readiness index, % with one decimal; None if nothing was rated
     na_count: int
+    unknown: list           # items answered «не знаю, уточнить», in file order
     violations: list        # sorted by rule 4.5
     top5: list
     critical: list          # violations with S = 5, in the order of rule 4.5
@@ -137,6 +140,8 @@ def coverage(bases, items, responses):
             status = NOT_RELEVANT
         elif VIOLATION in answers:
             status = HAS_VIOLATIONS
+        elif UNKNOWN in answers:
+            status = HAS_UNKNOWN
         elif all(a == NA for a in answers):
             status = ALL_NA
         else:
@@ -162,6 +167,7 @@ def evaluate(bases, checklist, responses):
     return Result(
         index=readiness_index(items, responses),
         na_count=sum(1 for i in items if responses[i["id"]]["answer"] == NA),
+        unknown=[i for i in items if responses[i["id"]]["answer"] == UNKNOWN],
         violations=violations,
         top5=violations[:5],
         critical=[v for v in violations if v.s == CRITICAL_S],

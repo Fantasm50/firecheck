@@ -15,7 +15,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
 from core.action_plan import due_text
-from core.scoring import NA, OK, VIOLATION
+from core.scoring import NA, OK, UNKNOWN, VIOLATION
 from core.validity import validity_alerts
 
 GROUP_LABELS = {"H": "высокий", "M": "средний", "L": "низкий"}
@@ -112,7 +112,7 @@ def build_report(bases, answers, checklist, result, responses, on_date=None, pla
     doc = Document()
     _setup(doc)
     items = checklist.items
-    counts = {a: sum(1 for i in items if responses[i["id"]]["answer"] == a) for a in (OK, VIOLATION, NA)}
+    counts = {a: sum(1 for i in items if responses[i["id"]]["answer"] == a) for a in (OK, VIOLATION, NA, UNKNOWN)}
 
     # ---------- title ----------
     doc.add_heading("Отчёт о самопроверке пожарной безопасности", level=0)
@@ -142,7 +142,7 @@ def build_report(bases, answers, checklist, result, responses, on_date=None, pla
     run.bold, run.font.size = True, Pt(16)
     doc.add_paragraph(
         f"Пунктов в чек-листе: {len(items)}; соответствует: {counts[OK]}; "
-        f"не соответствует: {counts[VIOLATION]}; не применимо: {counts[NA]}. "
+        f"не соответствует: {counts[VIOLATION]}; не применимо: {counts[NA]}; требует уточнения: {counts[UNKNOWN]}. "
         f"По анкете скрыто пунктов: {result.hidden_count}."
     )
     counts = result.group_counts
@@ -223,15 +223,38 @@ def build_report(bases, answers, checklist, result, responses, on_date=None, pla
                [[norm_ref(i), requirement_text(i), responses[i["id"]].get("comment", "")] for i in na_items],
                [3.0, 9.0, 5.0])
 
-    # ---------- 6. coverage of order No 525 ----------
-    doc.add_heading(f"{6 if na_items else 5}. Покрытие вопросов проверочного листа (приказ МЧС № 525)", level=1)
+    section = 6 if na_items else 5
+
+    # ---------- «не знаю, уточнить» ----------
+    if result.unknown:
+        doc.add_heading(f"{section}. Пункты, требующие уточнения", level=1)
+        doc.add_paragraph("На эти пункты специалист не смог ответить сразу. Они не входят в индекс готовности: "
+                          "уточните и повторите проверку.").runs[0].font.size = Pt(10)
+        _table(doc, ["Норма", "Требование", "Что уточнить"],
+               [[norm_ref(i), requirement_text(i), responses[i["id"]].get("comment", "")] for i in result.unknown],
+               [3.0, 9.0, 5.0])
+        section += 1
+
+    # ---------- hidden by the questionnaire, with the reason (4.9.2) ----------
+    if checklist.hidden:
+        doc.add_heading(f"{section}. Пункты, не включённые по анкете", level=1)
+        _table(doc, ["Норма", "Требование", "Когда пункт включается"],
+               [[norm_ref(i), requirement_text(i), i.get("condition") or ""] for i in checklist.hidden],
+               [3.0, 9.0, 5.0])
+        doc.add_paragraph("Если условие на объекте выполняется, исправьте анкету: пункт появится в чек-листе."
+                          ).runs[0].font.size = Pt(10)
+        section += 1
+
+    # ---------- coverage of order No 525 ----------
+    doc.add_heading(f"{section}. Покрытие вопросов проверочного листа (приказ МЧС № 525)", level=1)
     rows = [[q.replace("Q525-", "№ "), "; ".join(bases.questions[q].get("refs", [])), n, status]
             for q, n, status in result.coverage]
     _table(doc, ["Вопрос", "Нормы вопроса", "Пунктов", "Статус"], rows, [1.8, 8.2, 1.8, 5.2])
-    doc.add_paragraph("Остальные 17 вопросов листа в прототипе не проверяются.").runs[0].font.size = Pt(10)
+    rest = len(bases.questions) - len(bases.scope)
+    doc.add_paragraph(f"Остальные {rest} вопросов листа в прототипе не проверяются.").runs[0].font.size = Pt(10)
 
-    # ---------- 7. warnings ----------
-    doc.add_heading(f"{7 if na_items else 6}. Важно", level=1)
+    # ---------- warnings ----------
+    doc.add_heading(f"{section + 1}. Важно", level=1)
     for alert in validity_alerts(bases, on_date):  # outdated or expiring acts go first
         doc.add_paragraph(style="List Bullet").add_run(alert.text).bold = True
     for warning in WARNINGS:

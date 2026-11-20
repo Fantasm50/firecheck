@@ -19,11 +19,11 @@ from core.loader import DataError, load_bases
 from core.plan_export import build_plan_xlsx
 from core.recheck import apply_recheck
 from core.report import build_report
-from core.scoring import NA, OK, VIOLATION, ResponsesError, check_responses, evaluate
+from core.scoring import NA, OK, UNKNOWN, VIOLATION, ResponsesError, check_responses, evaluate
 from core.session_file import SessionFileError, dump_session, load_session
 from core.validity import EXPIRED, validity_alerts
 
-ANSWER_LABELS = {OK: "соответствует", VIOLATION: "не соответствует", NA: "не применимо"}
+ANSWER_LABELS = {OK: "соответствует", VIOLATION: "не соответствует", NA: "не применимо", UNKNOWN: "не знаю, уточнить"}
 GROUP_LABELS = {"H": "высокий", "M": "средний", "L": "низкий"}
 CHOICE_LABELS = {"yes": "да", "no": "нет", "unknown": "не знаю"}
 
@@ -249,6 +249,16 @@ def questionnaire_screen(bases):
 
 # ---------- screen 2: filling the checklist (4.3, 4.4) ----------
 
+def show_hidden(checklist):
+    """Items hidden by the questionnaire with the condition that would include them (4.9.2)."""
+    if not checklist.hidden:
+        return
+    with st.expander(f"По анкете скрыто пунктов: {len(checklist.hidden)} — почему"):
+        st.caption("Пункт включается, если на объекте выполняется условие. Если оно выполняется, исправьте анкету.")
+        st.dataframe([{"Пункт": i["id"], "Требование": i["check"], "Когда включается": i.get("condition") or ""}
+                      for i in checklist.hidden], hide_index=True)
+
+
 def read_responses(items):
     """Collect responses from widgets; items without an answer are left out."""
     responses = {}
@@ -275,7 +285,7 @@ def fill_screen(bases):
     st.title(f"Чек-лист: {name}")
     answered = sum(1 for i in items if st.session_state.get(f"a_{i['id']}") is not None)
     st.progress(answered / len(items), text=f"Отвечено {answered} из {len(items)}")
-    st.caption(f"По анкете скрыто пунктов: {checklist.hidden_count}")
+    show_hidden(checklist)
 
     for theme, group in by_theme(bases, items):
         with st.expander(f"{theme} ({len(group)})", expanded=True):
@@ -314,6 +324,8 @@ def item_card(bases, item):
                           key=key, label_visibility="collapsed", **unset(key, index=None))
         if answer == NA:
             st.text_input("Почему не применимо (обязательно)", key=f"c_{item_id}")
+        elif answer == UNKNOWN:
+            st.text_input("Что нужно уточнить (необязательно)", key=f"c_{item_id}")
         elif answer == VIOLATION:
             st.text_input("Комментарий (необязательно)", key=f"c_{item_id}")
             if bases.scores[item_id]["o"] < 5:
@@ -354,6 +366,13 @@ def result_screen(bases):
         st.caption(f"Нарушений: {len(result.violations)} (приоритет высокий {counts['H']} · "
                    f"средний {counts['M']} · низкий {counts['L']}) · «не применимо»: {result.na_count} · "
                    f"скрыто по анкете: {result.hidden_count}")
+        covered = sum(1 for _, n, _ in result.coverage if n > 0)
+        st.caption(f"**Проверочный лист МЧС (приказ № 525): по этому объекту проверено вопросов — {covered} "
+                   f"из {len(bases.questions)}.** Проверка МЧС шире листа; подробности — в блоке «Покрытие» ниже.")
+        if result.unknown:
+            st.warning(f"Требуют уточнения: {len(result.unknown)} пунктов ("
+                       f"{', '.join(i['id'] for i in result.unknown)}). Они не входят в индекс: "
+                       "уточните и вернитесь к ответам.")
         if result.na_unconditional:
             st.warning(f"«Не применимо» у пунктов, обязательных для всех объектов: "
                        f"{', '.join(result.na_unconditional)}. Проверьте комментарии: "
@@ -367,6 +386,7 @@ def result_screen(bases):
                         f"{norm_ref(v.item)} · приоритет: {GROUP_LABELS[v.group]}")
 
     plan_section(result)
+    show_hidden(checklist)
 
     with st.expander("Реестр всех нарушений по приоритету (с баллами S, O, D)"):
         st.dataframe([{
@@ -389,7 +409,7 @@ def result_screen(bases):
     with st.expander("Покрытие вопросов проверочного листа (приказ МЧС № 525)"):
         st.dataframe([{"Вопрос": bases.questions[q]["id"].replace("Q525-", "№ "), "Пунктов в чек-листе": n,
                        "Статус": status} for q, n, status in result.coverage], hide_index=True)
-        st.caption("Остальные 17 вопросов листа в прототипе не проверяются.")
+        st.caption(f"Остальные {len(bases.questions) - len(bases.scope)} вопросов листа в прототипе не проверяются.")
 
     for warning in WARNINGS:
         st.caption("⚠️ " + warning)

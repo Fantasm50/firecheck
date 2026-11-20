@@ -85,3 +85,10 @@ def test_recheck_through_the_interface():
     assert at.title[0].value.startswith("Результат самопроверки")
     assert any("индекс было 86.0 %" in s.value and "нарушений 6 → 5" in s.value for s in at.success)
     assert any("Критических нарушений" in s.value and "нет" in s.value for s in at.success)
+
+
+def test_result_shows_coverage_line():
+    at = AppTest.from_file(APP, default_timeout=60).run()
+    next(b for b in at.button if b.label.startswith("Демо")).click().run()
+    assert any("по этому объекту проверено вопросов" in c.value and "из 27" in c.value for c in at.caption)
+    assert any("скрыто пунктов: 20" in e.label for e in at.expander)

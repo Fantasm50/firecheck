@@ -6,7 +6,7 @@ Answers are a plain dict, for example:
 Flags that are not given count as "no"; choices that are not given take their default.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 class AnswersError(Exception):
@@ -22,6 +22,7 @@ class Checklist:
     items: list          # included demo items, in file order
     hidden_count: int    # demo items hidden by the questionnaire (shown in the report, 4.9.2)
     flags: set           # true flags, including derived ones
+    hidden: list = field(default_factory=list)  # demo items hidden by the questionnaire, in file order
 
 
 def default_answers(bases):
@@ -85,7 +86,9 @@ def build_checklist(bases, answers):
     flags = true_flags(bases, answers)
     items = [item for item in bases.items
              if not item.get("applies_if") or flags & set(item["applies_if"])]
-    return Checklist(items=items, hidden_count=len(bases.items) - len(items), flags=flags)
+    included = {item["id"] for item in items}
+    hidden = [item for item in bases.items if item["id"] not in included]
+    return Checklist(items=items, hidden_count=len(hidden), flags=flags, hidden=hidden)
 
 
 def by_theme(bases, items):
